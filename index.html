@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShinZ PS Order Form v0.5</title>
+  <title>ShinZ PS Order Form v0.6</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     .hidden { display: none; }
@@ -21,13 +21,13 @@
   </style>
 </head>
 <body>
-  <h2>ShinZ Personal Shopper Order Form v0.5</h2>
+  <h2>ShinZ Personal Shopper Order Form v0.6</h2>
   <!-- Section 1: Selection -->
   <div id="section-select" class="section">
     <h3>Pilih Produk (Pre-order Iris)</h3>
     <div id="products-container"></div>
     <div id="no-stock-message" class="warning hidden">Tiada produk dipilih.</div>
-    <h3>Pilihan Pembungkusan</h3>
+    <h3>Pilihan Pembungkusan (hanya untuk pos)</h3>
     <div id="packaging-section">
       <label><input type="radio" name="pack" value="3" checked /> Basic (1 lapis bubble wrap + kotak custom, RM3/box)</label>
       <label><input type="radio" name="pack" value="6" /> Standard (3 lapis bubble wrap + kotak custom, RM6/box)</label>
@@ -165,7 +165,7 @@
     function showSummary(selected) {
       const summaryDiv = document.getElementById("summary");
       summaryDiv.innerHTML = "";
-      let totalPrice = 0, totalUpah = 0, totalPack = 0;
+      let totalPrice = 0, totalUpah = 0, totalPackCost = 0;
       let totalBoxes = 0;
       selected.forEach(item => {
         totalPrice += item.price * item.qty;
@@ -176,10 +176,9 @@
         p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}, Upah RM${item.upah} x${item.qty} = RM${(item.upah*item.qty).toFixed(2)}`;
         summaryDiv.appendChild(p);
       });
-      // Packaging section only if visible
+      // Packaging only if pos
       const shipSel = document.querySelector('input[name="ship"]:checked').value;
-      let totalPackCost = 0;
-      if (shipSel !== 'pickup' && shipSel !== 'cod') {
+      if (shipSel === 'pos') {
         const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
         totalPackCost = packCostPer * totalBoxes;
         const pPack = document.createElement("p");
@@ -187,7 +186,7 @@
         pPack.innerHTML = `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPackCost.toFixed(2)}`;
         summaryDiv.appendChild(pPack);
       }
-      // Shipping cost auto RM10 per box
+      // Shipping cost auto RM10 per box or COD/pickup
       let totalShipCost = 0;
       if (shipSel === 'pickup') {
         summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: "Self Pickup: RM0", className:"summary-item" }));
@@ -202,7 +201,7 @@
       // Display total
       const grandTotal = totalPrice + totalUpah + totalPackCost + totalShipCost;
       summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`, className:"summary-item" }));
-      // Store in dataset for confirm
+      // No client orderId here; waiting server response
       summaryDiv.dataset.totalPrice = totalPrice;
       summaryDiv.dataset.totalUpah = totalUpah;
       summaryDiv.dataset.totalPack = totalPackCost;
@@ -218,9 +217,7 @@
       const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes);
       const totalShip = parseFloat(summaryDiv.dataset.totalShip);
       const selected = gatherSelected();
-      // Prepare data for Google Sheets integration without client-side Order ID
       const orderData = {
-        // no orderId here; Google Apps Script should assign sequence
         timestamp: new Date().toISOString(),
         items: selected.map(item => `${item.code} x${item.qty}`).join("; "),
         totalPrice,
@@ -230,7 +227,7 @@
         grandTotal: totalPrice + totalUpah + totalPack + totalShip
       };
 
-      const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+      const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL'; // Update with real URL
 
       if (scriptURL && !scriptURL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
         fetch(scriptURL, {
@@ -241,7 +238,7 @@
         })
         .then(response => response.json())
         .then(data => {
-          // Expect data.orderId returned from Apps Script
+          // Expect data.orderId returned from Apps Script, format PS-YYYYMMDD-XXX
           const orderId = data.orderId || '(tiada ID)';
           document.getElementById("orderIdDisplay").textContent = orderId;
           document.getElementById("section-review").classList.add("hidden");
