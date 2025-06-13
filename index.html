@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShinZ PS Order Form v0.3</title>
+  <title>ShinZ PS Order Form v0.4</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     .hidden { display: none; }
@@ -19,15 +19,16 @@
     .btn { padding: 8px 16px; margin: 5px 0; cursor: pointer; border: none; border-radius: 4px; }
     .btn-primary { background: #007bff; color: white; }
     .btn-secondary { background: #6c757d; color: white; }
+    .note { font-size: 0.9em; color: #555; }
   </style>
 </head>
 <body>
-  <h2>ShinZ Personal Shopper Order Form v0.3</h2>
+  <h2>ShinZ Personal Shopper Order Form v0.4</h2>
   <!-- Section 1: Selection -->
   <div id="section-select" class="section">
-    <h3>Pilih Produk & Kuantiti</h3>
+    <h3>Pilih Produk (Pre-order Iris)</h3>
     <div id="products-container"></div>
-    <div id="no-stock-message" class="warning hidden">Tiada produk dipilih atau semua habis stok.</div>
+    <div id="no-stock-message" class="warning hidden">Tiada produk dipilih.</div>
     <h3>Pilihan Lokasi Ambil Stok</h3>
     <select id="location-select">
       <option value="TGVfa">TGV 1ST Avenue Pineng</option>
@@ -35,13 +36,17 @@
       <!-- Tambah lokasi lain di sini -->
     </select>
     <h3>Pilihan Pembungkusan</h3>
-    <label><input type="radio" name="pack" value="3" checked /> Basic (1 lapis bubble wrap + kotak custom, RM3/box)</label>
-    <label><input type="radio" name="pack" value="6" /> Standard (3 lapis bubble wrap + kotak custom, RM6/box)</label>
+    <div id="packaging-section">
+      <label><input type="radio" name="pack" value="3" checked /> Basic (1 lapis bubble wrap + kotak custom, RM3/box)</label>
+      <label><input type="radio" name="pack" value="6" /> Standard (3 lapis bubble wrap + kotak custom, RM6/box)</label>
+    </div>
     <h3>Pilihan Penghantaran</h3>
     <label><input type="radio" name="ship" value="pickup" checked /> Self Pickup (Guar Utama) - RM0</label>
     <label><input type="radio" name="ship" value="cod" /> COD (Caj ikut jarak, isi manual nanti)</label>
-    <label><input type="radio" name="ship" value="pos_basic" data-unitcost="7" /> Pos Basic (RM7/box)</label>
-    <label><input type="radio" name="ship" value="pos_wrap" data-unitcost="10" /> Pos Wrap Tebal (RM10/box)</label>
+    <label><input type="radio" name="ship" value="pos" /> Pos (Auto RM10 per kotak)</label>
+    <div id="cod-cost-input" class="hidden">
+      <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" /></label>
+    </div>
     <button type="button" id="toReview" class="btn btn-primary">Semak</button>
   </div>
 
@@ -49,21 +54,6 @@
   <div id="section-review" class="section hidden">
     <h3>Ringkasan Order</h3>
     <div id="summary"></div>
-    <div id="combine-option" class="hidden">
-      <h4>Pilihan Gabung Parcel</h4>
-      <label><input type="radio" name="combine" value="separate" checked /> Hantar berasingan (kos pos ikut bilangan kotak)</label>
-      <label><input type="radio" name="combine" value="combine" /> Gabung dalam 1 parcel (isi kos pos manual)</label>
-      <div id="combine-warning" class="warning hidden">
-        ⚠️ Risiko kotak mungkin kemek / penerimaan bergantung pada courier.
-      </div>
-      <div id="combine-cost-input" class="hidden">
-        <label>Masukkan kos pos gabungan (RM): <input type="number" id="combineCost" min="0" /></label>
-      </div>
-    </div>
-    <div id="cod-cost-input" class="hidden">
-      <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" /></label>
-    </div>
-    <!-- Order ID auto-generate info -->
     <div class="flex-row">
       <label>Order ID: <span id="orderIdDisplayReview"></span></label>
     </div>
@@ -75,18 +65,14 @@
   <div id="section-confirm" class="section hidden">
     <h3>Order Diterima</h3>
     <p>Terima kasih! Kod Order Anda: <span id="orderIdDisplay"></span></p>
-    <p>Simpan kod ini untuk semakan status. Anda boleh hubungi penjual melalui WhatsApp.</p>
+    <p>Simpan kod ini untuk semakan status. Hubungi penjual melalui WhatsApp.</p>
   </div>
 
   <script>
-    // Product definitions with stock status
+    // Only Iris products with Pre-order label
     const products = [
-      { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, stock: true },
-      { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, stock: true },
-      { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 15, stock: true },
-      { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 15, stock: true },
-      { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 15, stock: false }
-      // Tambah produk baru di sini dengan stock true/false
+      { name: "Iris Ejen Ali (Pre-order)", code: "IEA", price: 70, upah: 25, stock: true },
+      { name: "Iris Ejen Alicia (Pre-order)", code: "IEI", price: 70, upah: 25, stock: true }
     ];
 
     function initProducts() {
@@ -97,10 +83,10 @@
         checkbox.type = "checkbox";
         checkbox.value = prod.code;
         checkbox.id = "prod-" + prod.code;
-        checkbox.disabled = !prod.stock;
+        checkbox.disabled = false;
         const label = document.createElement("label");
         label.htmlFor = checkbox.id;
-        label.textContent = prod.name + " (RM" + prod.price + ")" + (prod.stock ? "" : " - Habis Stok");
+        label.textContent = prod.name + " (RM" + prod.price + ")";
         wrapper.appendChild(checkbox);
         wrapper.appendChild(label);
         // quantity control using plus/minus
@@ -109,26 +95,24 @@
         const minusBtn = document.createElement("button");
         minusBtn.type = "button";
         minusBtn.textContent = "-";
-        minusBtn.disabled = !prod.stock;
         const qtyDisplay = document.createElement("span");
         qtyDisplay.id = "qty-display-" + prod.code;
         qtyDisplay.textContent = "0";
         const plusBtn = document.createElement("button");
         plusBtn.type = "button";
         plusBtn.textContent = "+";
-        plusBtn.disabled = !prod.stock;
-        // Handlers
+        // Handlers for quantity
         plusBtn.addEventListener("click", () => {
           let qty = parseInt(qtyDisplay.textContent);
           qtyDisplay.textContent = qty + 1;
-          document.getElementById("prod-" + prod.code).checked = (qty + 1) > 0;
+          checkbox.checked = true;
         });
         minusBtn.addEventListener("click", () => {
           let qty = parseInt(qtyDisplay.textContent);
           if (qty > 0) {
             qtyDisplay.textContent = qty - 1;
             if (qty - 1 === 0) {
-              document.getElementById("prod-" + prod.code).checked = false;
+              checkbox.checked = false;
             }
           }
         });
@@ -158,14 +142,32 @@
       const firstCode = selected.length > 0 ? selected[0].code : "NA";
       const location = document.getElementById("location-select").value;
       // Use timestamp suffix for uniqueness: YYYYMMDDHHMMSS
-      const ts = now.getFullYear().toString() + 
-                 String(now.getMonth()+1).padStart(2,'0') + 
-                 String(now.getDate()).padStart(2,'0') + 
-                 String(now.getHours()).padStart(2,'0') + 
-                 String(now.getMinutes()).padStart(2,'0') + 
+      const ts = now.getFullYear().toString() +
+                 String(now.getMonth()+1).padStart(2,'0') +
+                 String(now.getDate()).padStart(2,'0') +
+                 String(now.getHours()).padStart(2,'0') +
+                 String(now.getMinutes()).padStart(2,'0') +
                  String(now.getSeconds()).padStart(2,'0');
       return `PS${yy}${mm}-${firstCode}-${location}-${ts}`;
     }
+
+    document.querySelectorAll('input[name="ship"]').forEach(el => {
+      el.addEventListener('change', () => {
+        const val = document.querySelector('input[name="ship"]:checked').value;
+        // Hide packaging if pickup or cod
+        if (val === 'pickup' || val === 'cod') {
+          document.getElementById("packaging-section").classList.add("hidden");
+        } else {
+          document.getElementById("packaging-section").classList.remove("hidden");
+        }
+        // Show/hide COD cost input
+        if (val === 'cod') {
+          document.getElementById("cod-cost-input").classList.remove("hidden");
+        } else {
+          document.getElementById("cod-cost-input").classList.add("hidden");
+        }
+      });
+    });
 
     document.getElementById("toReview").addEventListener("click", () => {
       const selected = gatherSelected();
@@ -175,10 +177,9 @@
       } else {
         document.getElementById("no-stock-message").classList.add("hidden");
       }
-      const pack = document.querySelector('input[name="pack"]:checked');
       const ship = document.querySelector('input[name="ship"]:checked');
-      if (!pack || !ship) {
-        alert("Sila pilih pembungkusan dan penghantaran.");
+      if (!ship) {
+        alert("Sila pilih penghantaran.");
         return;
       }
       showSummary(selected);
@@ -191,10 +192,6 @@
     document.getElementById("backBtn").addEventListener("click", () => {
       document.getElementById("section-review").classList.add("hidden");
       document.getElementById("section-select").classList.remove("hidden");
-      document.getElementById("combine-option").classList.add("hidden");
-      document.getElementById("combine-warning").classList.add("hidden");
-      document.getElementById("combine-cost-input").classList.add("hidden");
-      document.getElementById("cod-cost-input").classList.add("hidden");
     });
 
     function showSummary(selected) {
@@ -211,55 +208,37 @@
         p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}, Upah RM${item.upah} x${item.qty} = RM${(item.upah*item.qty).toFixed(2)}`;
         summaryDiv.appendChild(p);
       });
-      const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
-      totalPack = packCostPer * totalBoxes;
-      const pPack = document.createElement("p");
-      pPack.className = "summary-item";
-      pPack.innerHTML = `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPack.toFixed(2)}`;
-      summaryDiv.appendChild(pPack);
-
+      // Packaging section only if visible
       const shipSel = document.querySelector('input[name="ship"]:checked').value;
-      const shipData = document.querySelector('input[name="ship"]:checked').dataset.unitcost;
-      if ((shipSel === "pos_basic" || shipSel === "pos_wrap") && totalBoxes > 1) {
-        document.getElementById("combine-option").classList.remove("hidden");
-      } else {
-        document.getElementById("combine-option").classList.add("hidden");
+      if (shipSel !== 'pickup' && shipSel !== 'cod') {
+        const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
+        totalPack = packCostPer * totalBoxes;
+        const pPack = document.createElement("p");
+        pPack.className = "summary-item";
+        pPack.innerHTML = `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPack.toFixed(2)}`;
+        summaryDiv.appendChild(pPack);
       }
-      if (shipSel === "cod") {
-        document.getElementById("cod-cost-input").classList.remove("hidden");
-      } else {
-        document.getElementById("cod-cost-input").classList.add("hidden");
+      // Shipping cost auto RM10 per box
+      let totalShip = 0;
+      if (shipSel === 'pickup') {
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: "Self Pickup: RM0", className:"summary-item" }));
+      } else if (shipSel === 'cod') {
+        const codCost = parseFloat(document.getElementById("codCost").value) || 0;
+        totalShip = codCost;
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `COD: RM${totalShip.toFixed(2)}`, className:"summary-item" }));
+      } else if (shipSel === 'pos') {
+        totalShip = 10 * totalBoxes;
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `Pos: RM10 x ${totalBoxes} kotak = RM${totalShip.toFixed(2)}`, className:"summary-item" }));
       }
-      const pShip = document.createElement("p");
-      if (shipSel === "pickup") {
-        pShip.textContent = "Self Pickup: RM0";
-      } else if (shipSel === "cod") {
-        pShip.textContent = "COD: Masukkan caj kemudian";
-      } else {
-        const unit = parseFloat(shipData);
-        pShip.textContent = `Pos RM${unit} x ${totalBoxes} kotak = RM${(unit * totalBoxes).toFixed(2)}`;
-      }
-      pShip.className = "summary-item";
-      summaryDiv.appendChild(pShip);
-
       summaryDiv.dataset.totalPrice = totalPrice;
       summaryDiv.dataset.totalUpah = totalUpah;
       summaryDiv.dataset.totalPack = totalPack;
       summaryDiv.dataset.totalBoxes = totalBoxes;
-      summaryDiv.dataset.shipSel = shipSel;
-      summaryDiv.dataset.shipUnit = shipData || 0;
+      summaryDiv.dataset.totalShip = totalShip;
+      // Display total
+      const grandTotal = totalPrice + totalUpah + totalPack + totalShip;
+      summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`, className:"summary-item" }));
     }
-
-    document.getElementById("combine-option").addEventListener("change", () => {
-      const combine = document.querySelector('input[name="combine"]:checked').value;
-      if (combine === "combine") {
-        document.getElementById("combine-warning").classList.remove("hidden");
-        document.getElementById("combine-cost-input").classList.remove("hidden");
-      } else {
-        document.getElementById("combine-warning").classList.add("hidden");
-        document.getElementById("combine-cost-input").classList.add("hidden");
-      }
-    });
 
     document.getElementById("confirmBtn").addEventListener("click", () => {
       const summaryDiv = document.getElementById("summary");
@@ -267,28 +246,10 @@
       const totalUpah = parseFloat(summaryDiv.dataset.totalUpah);
       const totalPack = parseFloat(summaryDiv.dataset.totalPack);
       const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes);
-      const shipSel = summaryDiv.dataset.shipSel;
-      let totalShip = 0;
-      if (shipSel === "pickup") {
-        totalShip = 0;
-      } else if (shipSel === "cod") {
-        totalShip = parseFloat(document.getElementById("codCost").value) || 0;
-      } else {
-        const unit = parseFloat(summaryDiv.dataset.shipUnit);
-        const combine = document.querySelector('input[name="combine"]:checked').value;
-        if (combine === "combine") {
-          totalShip = parseFloat(document.getElementById("combineCost").value) || 0;
-        } else {
-          totalShip = unit * totalBoxes;
-        }
-      }
-      const grandTotal = totalPrice + totalUpah + totalPack + totalShip;
+      const totalShip = parseFloat(summaryDiv.dataset.totalShip);
       const selected = gatherSelected();
-      const orderId = generateOrderId(selected);
+      const orderId = document.getElementById("orderIdDisplayReview").textContent;
       document.getElementById("orderIdDisplay").textContent = orderId;
-      const pTotal = document.createElement("p");
-      pTotal.innerHTML = `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`;
-      document.getElementById("summary").appendChild(pTotal);
 
       // Prepare data for Google Sheets integration
       const orderData = {
@@ -299,29 +260,36 @@
         totalUpah,
         totalPack,
         totalShip,
-        grandTotal,
+        grandTotal: totalPrice + totalUpah + totalPack + totalShip,
         location: document.getElementById("location-select").value
       };
 
-      // TODO: Replace with your Google Apps Script Web App URL
+      // Google Apps Script Web App URL - ensure to replace with actual URL
       const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
 
-      fetch(scriptURL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log('Success:', data);
+      if (scriptURL && !scriptURL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
+        fetch(scriptURL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Success:', data);
+          document.getElementById("section-review").classList.add("hidden");
+          document.getElementById("section-confirm").classList.remove("hidden");
+        })
+        .catch(error => {
+          console.error('Error!', error.message);
+          alert('Terdapat masalah menghantar data. Sila cuba lagi.');
+        });
+      } else {
+        // Skip fetch if URL not set
+        console.warn('Google Apps Script URL not set. Skipping data send.');
         document.getElementById("section-review").classList.add("hidden");
         document.getElementById("section-confirm").classList.remove("hidden");
-      })
-      .catch(error => {
-        console.error('Error!', error.message);
-        alert('Terdapat masalah menghantar data. Sila cuba lagi.');
-      });
+      }
     });
 
     // Initialize on load
