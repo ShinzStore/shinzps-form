@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShinZ PS Order Form v0.4</title>
+  <title>ShinZ PS Order Form v0.5</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     .hidden { display: none; }
@@ -15,26 +15,18 @@
     .warning { color: #d9534f; font-weight: bold; }
     .summary-item { margin-bottom: 10px; }
     .flex-row { display: flex; align-items: center; margin-bottom: 10px; }
-    .flex-row label { margin-right: 10px; }
     .btn { padding: 8px 16px; margin: 5px 0; cursor: pointer; border: none; border-radius: 4px; }
     .btn-primary { background: #007bff; color: white; }
     .btn-secondary { background: #6c757d; color: white; }
-    .note { font-size: 0.9em; color: #555; }
   </style>
 </head>
 <body>
-  <h2>ShinZ Personal Shopper Order Form v0.4</h2>
+  <h2>ShinZ Personal Shopper Order Form v0.5</h2>
   <!-- Section 1: Selection -->
   <div id="section-select" class="section">
     <h3>Pilih Produk (Pre-order Iris)</h3>
     <div id="products-container"></div>
     <div id="no-stock-message" class="warning hidden">Tiada produk dipilih.</div>
-    <h3>Pilihan Lokasi Ambil Stok</h3>
-    <select id="location-select">
-      <option value="TGVfa">TGV 1ST Avenue Pineng</option>
-      <option value="PGL">Permatang Damar Laut</option>
-      <!-- Tambah lokasi lain di sini -->
-    </select>
     <h3>Pilihan Pembungkusan</h3>
     <div id="packaging-section">
       <label><input type="radio" name="pack" value="3" checked /> Basic (1 lapis bubble wrap + kotak custom, RM3/box)</label>
@@ -55,7 +47,7 @@
     <h3>Ringkasan Order</h3>
     <div id="summary"></div>
     <div class="flex-row">
-      <label>Order ID: <span id="orderIdDisplayReview"></span></label>
+      <label>Order ID: <span id="orderIdDisplayReview">(akan dijana)</span></label>
     </div>
     <button type="button" id="backBtn" class="btn btn-secondary">Kembali</button>
     <button type="button" id="confirmBtn" class="btn btn-primary">Sahkan Order</button>
@@ -83,7 +75,6 @@
         checkbox.type = "checkbox";
         checkbox.value = prod.code;
         checkbox.id = "prod-" + prod.code;
-        checkbox.disabled = false;
         const label = document.createElement("label");
         label.htmlFor = checkbox.id;
         label.textContent = prod.name + " (RM" + prod.price + ")";
@@ -135,22 +126,6 @@
       return selected;
     }
 
-    function generateOrderId(selected) {
-      const now = new Date();
-      const yy = now.getFullYear().toString().substr(2,2);
-      const mm = String(now.getMonth()+1).padStart(2,'0');
-      const firstCode = selected.length > 0 ? selected[0].code : "NA";
-      const location = document.getElementById("location-select").value;
-      // Use timestamp suffix for uniqueness: YYYYMMDDHHMMSS
-      const ts = now.getFullYear().toString() +
-                 String(now.getMonth()+1).padStart(2,'0') +
-                 String(now.getDate()).padStart(2,'0') +
-                 String(now.getHours()).padStart(2,'0') +
-                 String(now.getMinutes()).padStart(2,'0') +
-                 String(now.getSeconds()).padStart(2,'0');
-      return `PS${yy}${mm}-${firstCode}-${location}-${ts}`;
-    }
-
     document.querySelectorAll('input[name="ship"]').forEach(el => {
       el.addEventListener('change', () => {
         const val = document.querySelector('input[name="ship"]:checked').value;
@@ -183,15 +158,8 @@
         return;
       }
       showSummary(selected);
-      const orderId = generateOrderId(selected);
-      document.getElementById("orderIdDisplayReview").textContent = orderId;
       document.getElementById("section-select").classList.add("hidden");
       document.getElementById("section-review").classList.remove("hidden");
-    });
-
-    document.getElementById("backBtn").addEventListener("click", () => {
-      document.getElementById("section-review").classList.add("hidden");
-      document.getElementById("section-select").classList.remove("hidden");
     });
 
     function showSummary(selected) {
@@ -210,34 +178,36 @@
       });
       // Packaging section only if visible
       const shipSel = document.querySelector('input[name="ship"]:checked').value;
+      let totalPackCost = 0;
       if (shipSel !== 'pickup' && shipSel !== 'cod') {
         const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
-        totalPack = packCostPer * totalBoxes;
+        totalPackCost = packCostPer * totalBoxes;
         const pPack = document.createElement("p");
         pPack.className = "summary-item";
-        pPack.innerHTML = `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPack.toFixed(2)}`;
+        pPack.innerHTML = `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPackCost.toFixed(2)}`;
         summaryDiv.appendChild(pPack);
       }
       // Shipping cost auto RM10 per box
-      let totalShip = 0;
+      let totalShipCost = 0;
       if (shipSel === 'pickup') {
         summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: "Self Pickup: RM0", className:"summary-item" }));
       } else if (shipSel === 'cod') {
         const codCost = parseFloat(document.getElementById("codCost").value) || 0;
-        totalShip = codCost;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `COD: RM${totalShip.toFixed(2)}`, className:"summary-item" }));
+        totalShipCost = codCost;
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `COD: RM${totalShipCost.toFixed(2)}`, className:"summary-item" }));
       } else if (shipSel === 'pos') {
-        totalShip = 10 * totalBoxes;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `Pos: RM10 x ${totalBoxes} kotak = RM${totalShip.toFixed(2)}`, className:"summary-item" }));
+        totalShipCost = 10 * totalBoxes;
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `Pos: RM10 x ${totalBoxes} kotak = RM${totalShipCost.toFixed(2)}`, className:"summary-item" }));
       }
+      // Display total
+      const grandTotal = totalPrice + totalUpah + totalPackCost + totalShipCost;
+      summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`, className:"summary-item" }));
+      // Store in dataset for confirm
       summaryDiv.dataset.totalPrice = totalPrice;
       summaryDiv.dataset.totalUpah = totalUpah;
-      summaryDiv.dataset.totalPack = totalPack;
+      summaryDiv.dataset.totalPack = totalPackCost;
       summaryDiv.dataset.totalBoxes = totalBoxes;
-      summaryDiv.dataset.totalShip = totalShip;
-      // Display total
-      const grandTotal = totalPrice + totalUpah + totalPack + totalShip;
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`, className:"summary-item" }));
+      summaryDiv.dataset.totalShip = totalShipCost;
     }
 
     document.getElementById("confirmBtn").addEventListener("click", () => {
@@ -248,23 +218,18 @@
       const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes);
       const totalShip = parseFloat(summaryDiv.dataset.totalShip);
       const selected = gatherSelected();
-      const orderId = document.getElementById("orderIdDisplayReview").textContent;
-      document.getElementById("orderIdDisplay").textContent = orderId;
-
-      // Prepare data for Google Sheets integration
+      // Prepare data for Google Sheets integration without client-side Order ID
       const orderData = {
-        orderId,
+        // no orderId here; Google Apps Script should assign sequence
         timestamp: new Date().toISOString(),
         items: selected.map(item => `${item.code} x${item.qty}`).join("; "),
         totalPrice,
         totalUpah,
         totalPack,
         totalShip,
-        grandTotal: totalPrice + totalUpah + totalPack + totalShip,
-        location: document.getElementById("location-select").value
+        grandTotal: totalPrice + totalUpah + totalPack + totalShip
       };
 
-      // Google Apps Script Web App URL - ensure to replace with actual URL
       const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
 
       if (scriptURL && !scriptURL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
@@ -276,7 +241,9 @@
         })
         .then(response => response.json())
         .then(data => {
-          console.log('Success:', data);
+          // Expect data.orderId returned from Apps Script
+          const orderId = data.orderId || '(tiada ID)';
+          document.getElementById("orderIdDisplay").textContent = orderId;
           document.getElementById("section-review").classList.add("hidden");
           document.getElementById("section-confirm").classList.remove("hidden");
         })
@@ -285,10 +252,8 @@
           alert('Terdapat masalah menghantar data. Sila cuba lagi.');
         });
       } else {
-        // Skip fetch if URL not set
         console.warn('Google Apps Script URL not set. Skipping data send.');
-        document.getElementById("section-review").classList.add("hidden");
-        document.getElementById("section-confirm").classList.remove("hidden");
+        alert('Sila tetapkan scriptURL untuk dapatkan Order ID automatik.');
       }
     });
 
