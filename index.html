@@ -4,13 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShinZ PS Order Form</title>
+  <title>ShinZ PS Order Form v0.3</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     .hidden { display: none; }
     .section { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
     label { display: block; margin-bottom: 5px; }
-    input[type="number"] { width: 60px; }
+    .qty-control { display: inline-flex; align-items: center; margin-left: 20px; }
+    .qty-control button { width: 30px; height: 30px; margin: 0 5px; }
     .warning { color: #d9534f; font-weight: bold; }
     .summary-item { margin-bottom: 10px; }
     .flex-row { display: flex; align-items: center; margin-bottom: 10px; }
@@ -18,11 +19,10 @@
     .btn { padding: 8px 16px; margin: 5px 0; cursor: pointer; border: none; border-radius: 4px; }
     .btn-primary { background: #007bff; color: white; }
     .btn-secondary { background: #6c757d; color: white; }
-    h2, h3 { margin-top: 0; }
   </style>
 </head>
 <body>
-  <h2>ShinZ Personal Shopper Order Form</h2>
+  <h2>ShinZ Personal Shopper Order Form v0.3</h2>
   <!-- Section 1: Selection -->
   <div id="section-select" class="section">
     <h3>Pilih Produk & Kuantiti</h3>
@@ -63,9 +63,9 @@
     <div id="cod-cost-input" class="hidden">
       <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" /></label>
     </div>
+    <!-- Order ID auto-generate info -->
     <div class="flex-row">
-      <label>Nombor Urut (contoh 001):</label>
-      <input type="text" id="orderSeq" placeholder="001" />
+      <label>Order ID: <span id="orderIdDisplayReview"></span></label>
     </div>
     <button type="button" id="backBtn" class="btn btn-secondary">Kembali</button>
     <button type="button" id="confirmBtn" class="btn btn-primary">Sahkan Order</button>
@@ -85,7 +85,7 @@
       { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, stock: true },
       { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 15, stock: true },
       { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 15, stock: true },
-      { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 15, stock: false } // contoh habis stok
+      { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 15, stock: false }
       // Tambah produk baru di sini dengan stock true/false
     ];
 
@@ -100,22 +100,42 @@
         checkbox.disabled = !prod.stock;
         const label = document.createElement("label");
         label.htmlFor = checkbox.id;
-        label.textContent = prod.name + " (RM" + prod.price + ")"
-          + (prod.stock ? "" : " - Habis Stok");
+        label.textContent = prod.name + " (RM" + prod.price + ")" + (prod.stock ? "" : " - Habis Stok");
         wrapper.appendChild(checkbox);
         wrapper.appendChild(label);
-        // quantity input
-        const qtyLabel = document.createElement("label");
-        qtyLabel.textContent = "Kuantiti:";
-        const qtyInput = document.createElement("input");
-        qtyInput.type = "number";
-        qtyInput.min = "1";
-        qtyInput.value = "1";
-        qtyInput.id = "qty-" + prod.code;
-        qtyInput.style.width = "50px";
-        qtyInput.disabled = !prod.stock;
-        wrapper.appendChild(qtyLabel);
-        wrapper.appendChild(qtyInput);
+        // quantity control using plus/minus
+        const qtyWrapper = document.createElement("div");
+        qtyWrapper.className = "qty-control";
+        const minusBtn = document.createElement("button");
+        minusBtn.type = "button";
+        minusBtn.textContent = "-";
+        minusBtn.disabled = !prod.stock;
+        const qtyDisplay = document.createElement("span");
+        qtyDisplay.id = "qty-display-" + prod.code;
+        qtyDisplay.textContent = "0";
+        const plusBtn = document.createElement("button");
+        plusBtn.type = "button";
+        plusBtn.textContent = "+";
+        plusBtn.disabled = !prod.stock;
+        // Handlers
+        plusBtn.addEventListener("click", () => {
+          let qty = parseInt(qtyDisplay.textContent);
+          qtyDisplay.textContent = qty + 1;
+          document.getElementById("prod-" + prod.code).checked = (qty + 1) > 0;
+        });
+        minusBtn.addEventListener("click", () => {
+          let qty = parseInt(qtyDisplay.textContent);
+          if (qty > 0) {
+            qtyDisplay.textContent = qty - 1;
+            if (qty - 1 === 0) {
+              document.getElementById("prod-" + prod.code).checked = false;
+            }
+          }
+        });
+        qtyWrapper.appendChild(minusBtn);
+        qtyWrapper.appendChild(qtyDisplay);
+        qtyWrapper.appendChild(plusBtn);
+        wrapper.appendChild(qtyWrapper);
         container.appendChild(wrapper);
       });
     }
@@ -123,16 +143,28 @@
     function gatherSelected() {
       const selected = [];
       products.forEach(prod => {
-        const checkbox = document.getElementById("prod-" + prod.code);
-        const qtyInput = document.getElementById("qty-" + prod.code);
-        if (checkbox.checked) {
-          const qty = parseInt(qtyInput.value) || 0;
-          if (qty > 0) {
-            selected.push({ ...prod, qty });
-          }
+        const qty = parseInt(document.getElementById("qty-display-" + prod.code).textContent);
+        if (qty > 0) {
+          selected.push({ ...prod, qty });
         }
       });
       return selected;
+    }
+
+    function generateOrderId(selected) {
+      const now = new Date();
+      const yy = now.getFullYear().toString().substr(2,2);
+      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const firstCode = selected.length > 0 ? selected[0].code : "NA";
+      const location = document.getElementById("location-select").value;
+      // Use timestamp suffix for uniqueness: YYYYMMDDHHMMSS
+      const ts = now.getFullYear().toString() + 
+                 String(now.getMonth()+1).padStart(2,'0') + 
+                 String(now.getDate()).padStart(2,'0') + 
+                 String(now.getHours()).padStart(2,'0') + 
+                 String(now.getMinutes()).padStart(2,'0') + 
+                 String(now.getSeconds()).padStart(2,'0');
+      return `PS${yy}${mm}-${firstCode}-${location}-${ts}`;
     }
 
     document.getElementById("toReview").addEventListener("click", () => {
@@ -143,7 +175,6 @@
       } else {
         document.getElementById("no-stock-message").classList.add("hidden");
       }
-      // Validate packaging and shipping
       const pack = document.querySelector('input[name="pack"]:checked');
       const ship = document.querySelector('input[name="ship"]:checked');
       if (!pack || !ship) {
@@ -151,6 +182,8 @@
         return;
       }
       showSummary(selected);
+      const orderId = generateOrderId(selected);
+      document.getElementById("orderIdDisplayReview").textContent = orderId;
       document.getElementById("section-select").classList.add("hidden");
       document.getElementById("section-review").classList.remove("hidden");
     });
@@ -158,7 +191,6 @@
     document.getElementById("backBtn").addEventListener("click", () => {
       document.getElementById("section-review").classList.add("hidden");
       document.getElementById("section-select").classList.remove("hidden");
-      // reset combine/cod inputs
       document.getElementById("combine-option").classList.add("hidden");
       document.getElementById("combine-warning").classList.add("hidden");
       document.getElementById("combine-cost-input").classList.add("hidden");
@@ -170,7 +202,6 @@
       summaryDiv.innerHTML = "";
       let totalPrice = 0, totalUpah = 0, totalPack = 0;
       let totalBoxes = 0;
-      // Products
       selected.forEach(item => {
         totalPrice += item.price * item.qty;
         totalUpah += item.upah * item.qty;
@@ -180,42 +211,37 @@
         p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}, Upah RM${item.upah} x${item.qty} = RM${(item.upah*item.qty).toFixed(2)}`;
         summaryDiv.appendChild(p);
       });
-      // Packaging
       const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
       totalPack = packCostPer * totalBoxes;
       const pPack = document.createElement("p");
       pPack.className = "summary-item";
       pPack.innerHTML = `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPack.toFixed(2)}`;
       summaryDiv.appendChild(pPack);
-      // Shipping
+
       const shipSel = document.querySelector('input[name="ship"]:checked').value;
       const shipData = document.querySelector('input[name="ship"]:checked').dataset.unitcost;
-      // Show combine option if pos and multiple boxes
       if ((shipSel === "pos_basic" || shipSel === "pos_wrap") && totalBoxes > 1) {
         document.getElementById("combine-option").classList.remove("hidden");
       } else {
         document.getElementById("combine-option").classList.add("hidden");
       }
-      // Show COD cost input if COD
       if (shipSel === "cod") {
         document.getElementById("cod-cost-input").classList.remove("hidden");
       } else {
         document.getElementById("cod-cost-input").classList.add("hidden");
       }
-      // Preliminary shipping display; final cost computed on confirm
       const pShip = document.createElement("p");
       if (shipSel === "pickup") {
         pShip.textContent = "Self Pickup: RM0";
       } else if (shipSel === "cod") {
         pShip.textContent = "COD: Masukkan caj kemudian";
       } else {
-        // separate by default
         const unit = parseFloat(shipData);
         pShip.textContent = `Pos RM${unit} x ${totalBoxes} kotak = RM${(unit * totalBoxes).toFixed(2)}`;
       }
       pShip.className = "summary-item";
       summaryDiv.appendChild(pShip);
-      // Store summary values for confirm stage
+
       summaryDiv.dataset.totalPrice = totalPrice;
       summaryDiv.dataset.totalUpah = totalUpah;
       summaryDiv.dataset.totalPack = totalPack;
@@ -224,7 +250,7 @@
       summaryDiv.dataset.shipUnit = shipData || 0;
     }
 
-    document.getElementById("combine-option").addEventListener("change", (e) => {
+    document.getElementById("combine-option").addEventListener("change", () => {
       const combine = document.querySelector('input[name="combine"]:checked').value;
       if (combine === "combine") {
         document.getElementById("combine-warning").classList.remove("hidden");
@@ -246,37 +272,56 @@
       if (shipSel === "pickup") {
         totalShip = 0;
       } else if (shipSel === "cod") {
-        const codCost = parseFloat(document.getElementById("codCost").value) || 0;
-        totalShip = codCost;
+        totalShip = parseFloat(document.getElementById("codCost").value) || 0;
       } else {
-        // pos_basic or pos_wrap
         const unit = parseFloat(summaryDiv.dataset.shipUnit);
         const combine = document.querySelector('input[name="combine"]:checked').value;
         if (combine === "combine") {
-          const combineVal = parseFloat(document.getElementById("combineCost").value);
-          totalShip = isNaN(combineVal) ? 0 : combineVal;
+          totalShip = parseFloat(document.getElementById("combineCost").value) || 0;
         } else {
           totalShip = unit * totalBoxes;
         }
       }
       const grandTotal = totalPrice + totalUpah + totalPack + totalShip;
-      // Generate order ID
-      const now = new Date();
-      const yy = now.getFullYear().toString().substr(2,2);
-      const mm = String(now.getMonth()+1).padStart(2,'0');
-      const firstCode = gatherSelected()[0].code;
-      const location = document.getElementById("location-select").value;
-      const seq = document.getElementById("orderSeq").value.padStart(3,'0');
-      const orderId = `PS${yy}${mm}-${firstCode}-${location}-${seq}`;
+      const selected = gatherSelected();
+      const orderId = generateOrderId(selected);
       document.getElementById("orderIdDisplay").textContent = orderId;
-      // Display grand total
       const pTotal = document.createElement("p");
       pTotal.innerHTML = `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`;
       document.getElementById("summary").appendChild(pTotal);
-      // Show confirmation
-      document.getElementById("section-review").classList.add("hidden");
-      document.getElementById("section-confirm").classList.remove("hidden");
-      // TODO: Integrate send data to backend or Google Sheets
+
+      // Prepare data for Google Sheets integration
+      const orderData = {
+        orderId,
+        timestamp: new Date().toISOString(),
+        items: selected.map(item => `${item.code} x${item.qty}`).join("; "),
+        totalPrice,
+        totalUpah,
+        totalPack,
+        totalShip,
+        grandTotal,
+        location: document.getElementById("location-select").value
+      };
+
+      // TODO: Replace with your Google Apps Script Web App URL
+      const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+
+      fetch(scriptURL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Success:', data);
+        document.getElementById("section-review").classList.add("hidden");
+        document.getElementById("section-confirm").classList.remove("hidden");
+      })
+      .catch(error => {
+        console.error('Error!', error.message);
+        alert('Terdapat masalah menghantar data. Sila cuba lagi.');
+      });
     });
 
     // Initialize on load
