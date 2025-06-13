@@ -1,1 +1,286 @@
-<!DOCTYPE html><html><head><title>ShinzPS</title></head><body>Coming Soon</body></html>
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShinZ PS Order Form</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    .hidden { display: none; }
+    .section { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    label { display: block; margin-bottom: 5px; }
+    input[type="number"] { width: 60px; }
+    .warning { color: #d9534f; font-weight: bold; }
+    .summary-item { margin-bottom: 10px; }
+    .flex-row { display: flex; align-items: center; margin-bottom: 10px; }
+    .flex-row label { margin-right: 10px; }
+    .btn { padding: 8px 16px; margin: 5px 0; cursor: pointer; border: none; border-radius: 4px; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    h2, h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h2>ShinZ Personal Shopper Order Form</h2>
+  <!-- Section 1: Selection -->
+  <div id="section-select" class="section">
+    <h3>Pilih Produk & Kuantiti</h3>
+    <div id="products-container"></div>
+    <div id="no-stock-message" class="warning hidden">Tiada produk dipilih atau semua habis stok.</div>
+    <h3>Pilihan Lokasi Ambil Stok</h3>
+    <select id="location-select">
+      <option value="TGVfa">TGV 1ST Avenue Pineng</option>
+      <option value="PGL">Permatang Damar Laut</option>
+      <!-- Tambah lokasi lain di sini -->
+    </select>
+    <h3>Pilihan Pembungkusan</h3>
+    <label><input type="radio" name="pack" value="3" checked /> Basic (1 lapis bubble wrap + kotak custom, RM3/box)</label>
+    <label><input type="radio" name="pack" value="6" /> Standard (3 lapis bubble wrap + kotak custom, RM6/box)</label>
+    <h3>Pilihan Penghantaran</h3>
+    <label><input type="radio" name="ship" value="pickup" checked /> Self Pickup (Guar Utama) - RM0</label>
+    <label><input type="radio" name="ship" value="cod" /> COD (Caj ikut jarak, isi manual nanti)</label>
+    <label><input type="radio" name="ship" value="pos_basic" data-unitcost="7" /> Pos Basic (RM7/box)</label>
+    <label><input type="radio" name="ship" value="pos_wrap" data-unitcost="10" /> Pos Wrap Tebal (RM10/box)</label>
+    <button type="button" id="toReview" class="btn btn-primary">Semak</button>
+  </div>
+
+  <!-- Section 2: Review -->
+  <div id="section-review" class="section hidden">
+    <h3>Ringkasan Order</h3>
+    <div id="summary"></div>
+    <div id="combine-option" class="hidden">
+      <h4>Pilihan Gabung Parcel</h4>
+      <label><input type="radio" name="combine" value="separate" checked /> Hantar berasingan (kos pos ikut bilangan kotak)</label>
+      <label><input type="radio" name="combine" value="combine" /> Gabung dalam 1 parcel (isi kos pos manual)</label>
+      <div id="combine-warning" class="warning hidden">
+        ⚠️ Risiko kotak mungkin kemek / penerimaan bergantung pada courier.
+      </div>
+      <div id="combine-cost-input" class="hidden">
+        <label>Masukkan kos pos gabungan (RM): <input type="number" id="combineCost" min="0" /></label>
+      </div>
+    </div>
+    <div id="cod-cost-input" class="hidden">
+      <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" /></label>
+    </div>
+    <div class="flex-row">
+      <label>Nombor Urut (contoh 001):</label>
+      <input type="text" id="orderSeq" placeholder="001" />
+    </div>
+    <button type="button" id="backBtn" class="btn btn-secondary">Kembali</button>
+    <button type="button" id="confirmBtn" class="btn btn-primary">Sahkan Order</button>
+  </div>
+
+  <!-- Section 3: Confirmation -->
+  <div id="section-confirm" class="section hidden">
+    <h3>Order Diterima</h3>
+    <p>Terima kasih! Kod Order Anda: <span id="orderIdDisplay"></span></p>
+    <p>Simpan kod ini untuk semakan status. Anda boleh hubungi penjual melalui WhatsApp.</p>
+  </div>
+
+  <script>
+    // Product definitions with stock status
+    const products = [
+      { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, stock: true },
+      { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, stock: true },
+      { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 15, stock: true },
+      { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 15, stock: true },
+      { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 15, stock: false } // contoh habis stok
+      // Tambah produk baru di sini dengan stock true/false
+    ];
+
+    function initProducts() {
+      const container = document.getElementById("products-container");
+      products.forEach(prod => {
+        const wrapper = document.createElement("div");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = prod.code;
+        checkbox.id = "prod-" + prod.code;
+        checkbox.disabled = !prod.stock;
+        const label = document.createElement("label");
+        label.htmlFor = checkbox.id;
+        label.textContent = prod.name + " (RM" + prod.price + ")"
+          + (prod.stock ? "" : " - Habis Stok");
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(label);
+        // quantity input
+        const qtyLabel = document.createElement("label");
+        qtyLabel.textContent = "Kuantiti:";
+        const qtyInput = document.createElement("input");
+        qtyInput.type = "number";
+        qtyInput.min = "1";
+        qtyInput.value = "1";
+        qtyInput.id = "qty-" + prod.code;
+        qtyInput.style.width = "50px";
+        qtyInput.disabled = !prod.stock;
+        wrapper.appendChild(qtyLabel);
+        wrapper.appendChild(qtyInput);
+        container.appendChild(wrapper);
+      });
+    }
+
+    function gatherSelected() {
+      const selected = [];
+      products.forEach(prod => {
+        const checkbox = document.getElementById("prod-" + prod.code);
+        const qtyInput = document.getElementById("qty-" + prod.code);
+        if (checkbox.checked) {
+          const qty = parseInt(qtyInput.value) || 0;
+          if (qty > 0) {
+            selected.push({ ...prod, qty });
+          }
+        }
+      });
+      return selected;
+    }
+
+    document.getElementById("toReview").addEventListener("click", () => {
+      const selected = gatherSelected();
+      if (selected.length === 0) {
+        document.getElementById("no-stock-message").classList.remove("hidden");
+        return;
+      } else {
+        document.getElementById("no-stock-message").classList.add("hidden");
+      }
+      // Validate packaging and shipping
+      const pack = document.querySelector('input[name="pack"]:checked');
+      const ship = document.querySelector('input[name="ship"]:checked');
+      if (!pack || !ship) {
+        alert("Sila pilih pembungkusan dan penghantaran.");
+        return;
+      }
+      showSummary(selected);
+      document.getElementById("section-select").classList.add("hidden");
+      document.getElementById("section-review").classList.remove("hidden");
+    });
+
+    document.getElementById("backBtn").addEventListener("click", () => {
+      document.getElementById("section-review").classList.add("hidden");
+      document.getElementById("section-select").classList.remove("hidden");
+      // reset combine/cod inputs
+      document.getElementById("combine-option").classList.add("hidden");
+      document.getElementById("combine-warning").classList.add("hidden");
+      document.getElementById("combine-cost-input").classList.add("hidden");
+      document.getElementById("cod-cost-input").classList.add("hidden");
+    });
+
+    function showSummary(selected) {
+      const summaryDiv = document.getElementById("summary");
+      summaryDiv.innerHTML = "";
+      let totalPrice = 0, totalUpah = 0, totalPack = 0;
+      let totalBoxes = 0;
+      // Products
+      selected.forEach(item => {
+        totalPrice += item.price * item.qty;
+        totalUpah += item.upah * item.qty;
+        totalBoxes += item.qty;
+        const p = document.createElement("p");
+        p.className = "summary-item";
+        p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}, Upah RM${item.upah} x${item.qty} = RM${(item.upah*item.qty).toFixed(2)}`;
+        summaryDiv.appendChild(p);
+      });
+      // Packaging
+      const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
+      totalPack = packCostPer * totalBoxes;
+      const pPack = document.createElement("p");
+      pPack.className = "summary-item";
+      pPack.innerHTML = `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPack.toFixed(2)}`;
+      summaryDiv.appendChild(pPack);
+      // Shipping
+      const shipSel = document.querySelector('input[name="ship"]:checked').value;
+      const shipData = document.querySelector('input[name="ship"]:checked').dataset.unitcost;
+      // Show combine option if pos and multiple boxes
+      if ((shipSel === "pos_basic" || shipSel === "pos_wrap") && totalBoxes > 1) {
+        document.getElementById("combine-option").classList.remove("hidden");
+      } else {
+        document.getElementById("combine-option").classList.add("hidden");
+      }
+      // Show COD cost input if COD
+      if (shipSel === "cod") {
+        document.getElementById("cod-cost-input").classList.remove("hidden");
+      } else {
+        document.getElementById("cod-cost-input").classList.add("hidden");
+      }
+      // Preliminary shipping display; final cost computed on confirm
+      const pShip = document.createElement("p");
+      if (shipSel === "pickup") {
+        pShip.textContent = "Self Pickup: RM0";
+      } else if (shipSel === "cod") {
+        pShip.textContent = "COD: Masukkan caj kemudian";
+      } else {
+        // separate by default
+        const unit = parseFloat(shipData);
+        pShip.textContent = `Pos RM${unit} x ${totalBoxes} kotak = RM${(unit * totalBoxes).toFixed(2)}`;
+      }
+      pShip.className = "summary-item";
+      summaryDiv.appendChild(pShip);
+      // Store summary values for confirm stage
+      summaryDiv.dataset.totalPrice = totalPrice;
+      summaryDiv.dataset.totalUpah = totalUpah;
+      summaryDiv.dataset.totalPack = totalPack;
+      summaryDiv.dataset.totalBoxes = totalBoxes;
+      summaryDiv.dataset.shipSel = shipSel;
+      summaryDiv.dataset.shipUnit = shipData || 0;
+    }
+
+    document.getElementById("combine-option").addEventListener("change", (e) => {
+      const combine = document.querySelector('input[name="combine"]:checked').value;
+      if (combine === "combine") {
+        document.getElementById("combine-warning").classList.remove("hidden");
+        document.getElementById("combine-cost-input").classList.remove("hidden");
+      } else {
+        document.getElementById("combine-warning").classList.add("hidden");
+        document.getElementById("combine-cost-input").classList.add("hidden");
+      }
+    });
+
+    document.getElementById("confirmBtn").addEventListener("click", () => {
+      const summaryDiv = document.getElementById("summary");
+      const totalPrice = parseFloat(summaryDiv.dataset.totalPrice);
+      const totalUpah = parseFloat(summaryDiv.dataset.totalUpah);
+      const totalPack = parseFloat(summaryDiv.dataset.totalPack);
+      const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes);
+      const shipSel = summaryDiv.dataset.shipSel;
+      let totalShip = 0;
+      if (shipSel === "pickup") {
+        totalShip = 0;
+      } else if (shipSel === "cod") {
+        const codCost = parseFloat(document.getElementById("codCost").value) || 0;
+        totalShip = codCost;
+      } else {
+        // pos_basic or pos_wrap
+        const unit = parseFloat(summaryDiv.dataset.shipUnit);
+        const combine = document.querySelector('input[name="combine"]:checked').value;
+        if (combine === "combine") {
+          const combineVal = parseFloat(document.getElementById("combineCost").value);
+          totalShip = isNaN(combineVal) ? 0 : combineVal;
+        } else {
+          totalShip = unit * totalBoxes;
+        }
+      }
+      const grandTotal = totalPrice + totalUpah + totalPack + totalShip;
+      // Generate order ID
+      const now = new Date();
+      const yy = now.getFullYear().toString().substr(2,2);
+      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const firstCode = gatherSelected()[0].code;
+      const location = document.getElementById("location-select").value;
+      const seq = document.getElementById("orderSeq").value.padStart(3,'0');
+      const orderId = `PS${yy}${mm}-${firstCode}-${location}-${seq}`;
+      document.getElementById("orderIdDisplay").textContent = orderId;
+      // Display grand total
+      const pTotal = document.createElement("p");
+      pTotal.innerHTML = `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`;
+      document.getElementById("summary").appendChild(pTotal);
+      // Show confirmation
+      document.getElementById("section-review").classList.add("hidden");
+      document.getElementById("section-confirm").classList.remove("hidden");
+      // TODO: Integrate send data to backend or Google Sheets
+    });
+
+    // Initialize on load
+    initProducts();
+  </script>
+</body>
+</html>
