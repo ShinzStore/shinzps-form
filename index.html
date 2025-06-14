@@ -2,15 +2,15 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShinZ PS Order Form v0.7</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShinZ PS Order Form v0.8</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    .hidden { display: none; }
+    h2 { text-align: center; }
     .section { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-    label { display: block; margin-bottom: 5px; }
-    .qty-control { display: inline-flex; align-items: center; margin-left: 20px; }
+    label { display: block; margin-bottom: 8px; }
+    .qty-control { display: inline-flex; align-items: center; margin-left: 10px; }
     .qty-control button { width: 30px; height: 30px; margin: 0 5px; }
     .warning { color: #d9534f; font-weight: bold; }
     .summary-item { margin-bottom: 10px; }
@@ -18,26 +18,38 @@
     .btn { padding: 8px 16px; margin: 5px 0; cursor: pointer; border: none; border-radius: 4px; }
     .btn-primary { background: #007bff; color: white; }
     .btn-secondary { background: #6c757d; color: white; }
+    .info-icon { 
+      display: inline-block; width: 16px; height: 16px; border: 1px solid #333; border-radius: 50%; 
+      text-align: center; line-height: 14px; font-size: 12px; cursor: pointer; margin-left: 4px;
+    }
+    .hidden { display: none; }
+    input[type="text"], input[type="tel"] { width: 100%; padding: 6px; margin: 4px 0; box-sizing: border-box; }
   </style>
 </head>
 <body>
-  <h2>ShinZ Personal Shopper Order Form v0.7</h2>
+  <h2>ShinZ Personal Shopper Order Form v0.8</h2>
+  <div class="section">
+    <div class="flex-row">
+      <span><strong>MGC-S174 (SOLEHUDDIN)</strong></span>
+      <span class="info-icon" onclick="alert('Solehuddin: 01170351789')">i</span>
+    </div>
+  </div>
   <!-- Section 1: Selection -->
   <div id="section-select" class="section">
     <h3>Pilih Produk</h3>
     <div id="products-container"></div>
     <div id="no-stock-message" class="warning hidden">Tiada produk dipilih.</div>
-    <h3>Pilihan Pembungkusan (hanya untuk pos)</h3>
-    <div id="packaging-section">
-      <label><input type="radio" name="pack" value="3" checked /> Basic (1 lapis bubble wrap + kotak custom, RM3/box)</label>
-      <label><input type="radio" name="pack" value="6" /> Standard (3 lapis bubble wrap + kotak custom, RM6/box)</label>
-    </div>
     <h3>Pilihan Penghantaran</h3>
-    <label><input type="radio" name="ship" value="pickup" checked /> Self Pickup - RM0</label>
-    <label><input type="radio" name="ship" value="cod" /> COD (Caj ikut jarak)</label>
-    <label><input type="radio" name="ship" value="pos" /> Pos (Auto RM10 per kotak)</label>
+    <label><input type="radio" name="ship" value="pos"> Pos</label>
+    <label><input type="radio" name="ship" value="cod"> COD</label>
+    <label><input type="radio" name="ship" value="pickup" checked> Self Pickup</label>
+    <div id="shipping-details" class="hidden">
+      <label>Nama: <input type="text" id="customerName"></label>
+      <label>Alamat: <input type="text" id="customerAddress"></label>
+      <label>Nombor Telefon: <input type="tel" id="customerPhone"></label>
+    </div>
     <div id="cod-cost-input" class="hidden">
-      <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" /></label>
+      <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0"></label>
     </div>
     <button type="button" id="toReview" class="btn btn-primary">Semak</button>
   </div>
@@ -61,14 +73,14 @@
   </div>
 
   <script>
-    // Products including sold-out items, labeled but disabled
+    // Products including sold-out items with label
     const products = [
-      { name: "Iris Ejen Ali (Pre-order)", code: "IEA", price: 70, upah: 25, stock: true },
-      { name: "Iris Ejen Alicia (Pre-order)", code: "IEI", price: 70, upah: 25, stock: true },
-      { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 15, stock: false },
-      { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 15, stock: false },
-      { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 15, stock: false },
-      { name: "Kad Kecemasan Keluangman", code: "IDKM", price: 11.5, upah: 15, stock: false }
+      { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. PS akan mula ambil Iris di TGV Gurney Paragon Pulau Pinang bermula 15/7/2025 secara berperingkat. Maksimum setiap pengambilan terhad hanya 8 box untuk satu perjalan.", stock: true },
+      { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. PS akan mula ambil Iris di TGV Gurney Paragon Pulau Pinang bermula 15/7/2025 secara berperingkat. Maksimum setiap pengambilan terhad hanya 8 box untuk satu perjalan.", stock: true },
+      { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 15, logistic: 5, stock: false },
+      { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 15, logistic: 5, stock: false },
+      { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 15, logistic: 5, stock: false },
+      { name: "Kad Kecemasan Keluangman", code: "IDKM", price: 11.5, upah: 15, logistic: 5, stock: false }
     ];
 
     function initProducts() {
@@ -80,100 +92,141 @@
         checkbox.value = prod.code;
         checkbox.id = "prod-" + prod.code;
         checkbox.disabled = !prod.stock;
+        wrapper.appendChild(checkbox);
         const label = document.createElement("label");
         label.htmlFor = checkbox.id;
-        label.textContent = prod.name + " (RM" + prod.price + ")" + (prod.stock ? "" : " - Habis Stok");
-        wrapper.appendChild(checkbox);
+        label.textContent = prod.name + " (RM" + prod.price + ")";
+        if (!prod.stock) {
+          label.textContent += " - Habis Stok";
+        }
         wrapper.appendChild(label);
-        // quantity control using plus/minus
-        const qtyWrapper = document.createElement("div");
-        qtyWrapper.className = "qty-control";
-        const minusBtn = document.createElement("button");
-        minusBtn.type = "button";
-        minusBtn.textContent = "-";
-        minusBtn.disabled = !prod.stock;
-        const qtyDisplay = document.createElement("span");
-        qtyDisplay.id = "qty-display-" + prod.code;
-        qtyDisplay.textContent = "0";
-        const plusBtn = document.createElement("button");
-        plusBtn.type = "button";
-        plusBtn.textContent = "+";
-        plusBtn.disabled = !prod.stock;
-        // Handlers for quantity
-        plusBtn.addEventListener("click", () => {
-          let qty = parseInt(qtyDisplay.textContent);
-          qtyDisplay.textContent = qty + 1;
-          checkbox.checked = true;
-        });
-        minusBtn.addEventListener("click", () => {
-          let qty = parseInt(qtyDisplay.textContent);
-          if (qty > 0) {
-            qtyDisplay.textContent = qty - 1;
-            if (qty - 1 === 0) {
-              checkbox.checked = false;
-            }
+        if (prod.stock) {
+          // Preorder info icon
+          if (prod.preorderInfo) {
+            const infoIcon = document.createElement("span");
+            infoIcon.className = "info-icon";
+            infoIcon.textContent = "i";
+            infoIcon.onclick = () => alert(prod.preorderInfo);
+            label.appendChild(infoIcon);
           }
-        });
-        qtyWrapper.appendChild(minusBtn);
-        qtyWrapper.appendChild(qtyDisplay);
-        qtyWrapper.appendChild(plusBtn);
-        wrapper.appendChild(qtyWrapper);
+          // Quantity controls
+          const qtyWrapper = document.createElement("span");
+          qtyWrapper.className = "qty-control";
+          const minusBtn = document.createElement("button");
+          minusBtn.type = "button";
+          minusBtn.textContent = "-";
+          const qtyDisplay = document.createElement("span");
+          qtyDisplay.id = "qty-display-" + prod.code;
+          qtyDisplay.textContent = "0";
+          const plusBtn = document.createElement("button");
+          plusBtn.type = "button";
+          plusBtn.textContent = "+";
+          plusBtn.addEventListener("click", () => {
+            let qty = parseInt(qtyDisplay.textContent);
+            qtyDisplay.textContent = qty + 1;
+            checkbox.checked = true;
+          });
+          minusBtn.addEventListener("click", () => {
+            let qty = parseInt(qtyDisplay.textContent);
+            if (qty > 0) {
+              qtyDisplay.textContent = qty - 1;
+              if (qty - 1 === 0) checkbox.checked = false;
+            }
+          });
+          qtyWrapper.appendChild(minusBtn);
+          qtyWrapper.appendChild(qtyDisplay);
+          qtyWrapper.appendChild(plusBtn);
+          wrapper.appendChild(qtyWrapper);
+          // Upah info
+          const upahDiv = document.createElement("div");
+          upahDiv.style.fontSize = "0.9em";
+          upahDiv.textContent = "Kos Upah: RM" + prod.upah;
+          const upahIcon = document.createElement("span");
+          upahIcon.className = "info-icon";
+          upahIcon.textContent = "i";
+          upahIcon.onclick = () => alert("Upah yang dikernakan dambil kira berdasarkan masa pengurusan, masa perjalanan menaiki pengangkutan awam (Komuter, Feri, Bas), masa menunggu di stesen pengangkutan awam masa menunggu, masa beratur dan lain-lain yang mana total keseluruhan mengambil masa selama 8 - 10 jam (mungkin lebih mengikut situasi semasa).");
+          upahDiv.appendChild(upahIcon);
+          wrapper.appendChild(upahDiv);
+          // Logistic info
+          const logDiv = document.createElement("div");
+          logDiv.style.fontSize = "0.9em";
+          logDiv.textContent = "Kos Logistik: RM" + prod.logistic;
+          const logIcon = document.createElement("span");
+          logIcon.className = "info-icon";
+          logIcon.textContent = "i";
+          logIcon.onclick = () => alert("Kos ini merangkumi perjalan pergi dan balik menaiki pengangkutan awam, angkut barang dan lain-lain");
+          logDiv.appendChild(logIcon);
+          wrapper.appendChild(logDiv);
+        }
         container.appendChild(wrapper);
       });
-    }
-
-    function gatherSelected() {
-      const selected = [];
-      products.forEach(prod => {
-        const qty = parseInt(document.getElementById("qty-display-" + prod.code).textContent);
-        if (qty > 0) {
-          selected.push({ ...prod, qty });
-        }
-      });
-      return selected;
     }
 
     document.querySelectorAll('input[name="ship"]').forEach(el => {
       el.addEventListener('change', () => {
         const val = document.querySelector('input[name="ship"]:checked').value;
-        // Hide packaging if pickup or cod
-        if (val === 'pickup' || val === 'cod') {
-          document.getElementById("packaging-section").classList.add("hidden");
+        const shipDetails = document.getElementById("shipping-details");
+        const codDetails = document.getElementById("cod-cost-input");
+        const packagingSection = document.getElementById("packaging-section");
+        if (val === 'pos') {
+          shipDetails.classList.remove("hidden");
+          packagingSection.classList.remove("hidden");
+          codDetails.classList.add("hidden");
+        } else if (val === 'cod') {
+          shipDetails.classList.remove("hidden");
+          codDetails.classList.remove("hidden");
+          packagingSection.classList.add("hidden");
         } else {
-          document.getElementById("packaging-section").classList.remove("hidden");
-        }
-        // Show/hide COD cost input
-        if (val === 'cod') {
-          document.getElementById("cod-cost-input").classList.remove("hidden");
-        } else {
-          document.getElementById("cod-cost-input").classList.add("hidden");
+          shipDetails.classList.add("hidden");
+          codDetails.classList.add("hidden");
+          packagingSection.classList.add("hidden");
         }
       });
     });
+
+    function gatherSelected() {
+      const selected = [];
+      products.forEach(prod => {
+        const qtyEl = document.getElementById("qty-display-" + prod.code);
+        if (qtyEl) {
+          const qty = parseInt(qtyEl.textContent);
+          if (qty > 0) selected.push({ ...prod, qty });
+        }
+      });
+      return selected;
+    }
 
     document.getElementById("toReview").addEventListener("click", () => {
       const selected = gatherSelected();
       if (selected.length === 0) {
         document.getElementById("no-stock-message").classList.remove("hidden");
         return;
-      } else {
-        document.getElementById("no-stock-message").classList.add("hidden");
       }
+      document.getElementById("no-stock-message").classList.add("hidden");
       const ship = document.querySelector('input[name="ship"]:checked');
       if (!ship) {
         alert("Sila pilih penghantaran.");
         return;
       }
+      if ((ship.value === 'pos' || ship.value === 'cod')) {
+        const name = document.getElementById("customerName").value.trim();
+        const address = document.getElementById("customerAddress").value.trim();
+        const phone = document.getElementById("customerPhone").value.trim();
+        if (!name || !address || !phone) {
+          alert("Sila isi Nama, Alamat, dan Nombor Telefon.");
+          return;
+        }
+      }
       showSummary(selected);
+      document.getElementById("orderIdDisplayReview").textContent = "(akan dijana)";
       document.getElementById("section-select").classList.add("hidden");
       document.getElementById("section-review").classList.remove("hidden");
-      document.getElementById("orderIdDisplayReview").textContent = "(sedang dijana)";
     });
 
     function showSummary(selected) {
       const summaryDiv = document.getElementById("summary");
       summaryDiv.innerHTML = "";
-      let totalPrice = 0, totalUpah = 0, totalPackCost = 0;
+      let totalPrice = 0, totalUpah = 0, totalPackCost = 0, totalShipCost = 0;
       let totalBoxes = 0;
       selected.forEach(item => {
         totalPrice += item.price * item.qty;
@@ -184,36 +237,35 @@
         p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}, Upah RM${item.upah} x${item.qty} = RM${(item.upah*item.qty).toFixed(2)}`;
         summaryDiv.appendChild(p);
       });
-      // Packaging only if pos
       const shipSel = document.querySelector('input[name="ship"]:checked').value;
       if (shipSel === 'pos') {
         const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
-        totalPackCost = packCostPer * totalBoxes;
-        const pPack = document.createElement("p");
-        pPack.className = "summary-item";
-        pPack.innerHTML = `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPackCost.toFixed(2)}`;
-        summaryDiv.appendChild(pPack);
+        totalPackCost = packCostPer * selected.reduce((s,i)=>s+i.qty,0);
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `Packaging: RM${packCostPer} x ${selected.reduce((s,i)=>s+i.qty,0)} kotak = RM${totalPackCost.toFixed(2)}`, className:"summary-item" }));
       }
-      // Shipping cost auto RM10 per box or COD/pickup
-      let totalShipCost = 0;
-      if (shipSel === 'pickup') {
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: "Self Pickup: RM0", className:"summary-item" }));
+      if (shipSel === 'pos') {
+        totalShipCost = 10 * selected.reduce((s,i)=>s+i.qty,0);
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `Pos: RM10 x ${selected.reduce((s,i)=>s+i.qty,0)} kotak = RM${totalShipCost.toFixed(2)}`, className:"summary-item" }));
       } else if (shipSel === 'cod') {
         const codCost = parseFloat(document.getElementById("codCost").value) || 0;
         totalShipCost = codCost;
         summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `COD: RM${totalShipCost.toFixed(2)}`, className:"summary-item" }));
-      } else if (shipSel === 'pos') {
-        totalShipCost = 10 * totalBoxes;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `Pos: RM10 x ${totalBoxes} kotak = RM${totalShipCost.toFixed(2)}`, className:"summary-item" }));
+      } else {
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: "Self Pickup: RM0", className:"summary-item" }));
       }
       const grandTotal = totalPrice + totalUpah + totalPackCost + totalShipCost;
       summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`, className:"summary-item" }));
       summaryDiv.dataset.totalPrice = totalPrice;
       summaryDiv.dataset.totalUpah = totalUpah;
       summaryDiv.dataset.totalPack = totalPackCost;
-      summaryDiv.dataset.totalBoxes = totalBoxes;
+      summaryDiv.dataset.totalBoxes = selected.reduce((s,i)=>s+i.qty,0);
       summaryDiv.dataset.totalShip = totalShipCost;
     }
+
+    document.getElementById("backBtn").addEventListener("click", () => {
+      document.getElementById("section-review").classList.add("hidden");
+      document.getElementById("section-select").classList.remove("hidden");
+    });
 
     document.getElementById("confirmBtn").addEventListener("click", () => {
       const summaryDiv = document.getElementById("summary");
@@ -224,18 +276,18 @@
       const totalShip = parseFloat(summaryDiv.dataset.totalShip);
       const selected = gatherSelected();
       const orderData = {
-        // No client orderId; server will assign sequential ID
         timestamp: new Date().toISOString(),
         items: selected.map(item => `${item.code} x${item.qty}`).join("; "),
         totalPrice,
         totalUpah,
         totalPack,
         totalShip,
-        grandTotal: totalPrice + totalUpah + totalPack + totalShip
+        grandTotal: totalPrice + totalUpah + totalPack + totalShip,
+        customerName: document.getElementById("customerName")?.value.trim() || "",
+        customerAddress: document.getElementById("customerAddress")?.value.trim() || "",
+        customerPhone: document.getElementById("customerPhone")?.value.trim() || ""
       };
-
-      const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL'; // Update with real URL
-
+      const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
       if (scriptURL && !scriptURL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
         fetch(scriptURL, {
           method: 'POST',
@@ -245,7 +297,6 @@
         })
         .then(response => response.json())
         .then(data => {
-          // Expect data.orderId returned from Apps Script, format PS-YYYYMMDD-XXX
           const orderId = data.orderId || '(tiada ID)';
           document.getElementById("orderIdDisplay").textContent = orderId;
           document.getElementById("orderIdDisplayReview").textContent = orderId;
@@ -257,13 +308,11 @@
           alert('Terdapat masalah menghantar data. Sila cuba lagi.');
         });
       } else {
-        console.warn('Google Apps Script URL not set. Skipping data send.');
         alert('Sila tetapkan scriptURL untuk dapatkan Order ID automatik.');
       }
     });
 
-    // Initialize on load
-    initProducts();
+    window.onload = initProducts;
   </script>
 </body>
 </html>
