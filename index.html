@@ -23,7 +23,7 @@
       text-align: center; line-height: 14px; font-size: 12px; cursor: pointer; margin-left: 4px;
     }
     .hidden { display: none; }
-    input[type="text"], input[type="tel"] { width: 100%; padding: 6px; margin: 4px 0; box-sizing: border-box; }
+    input[type="text"], input[type="tel"], input[type="number"] { width: 100%; padding: 6px; margin: 4px 0; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -40,9 +40,9 @@
     <div id="products-container"></div>
     <div id="no-stock-message" class="warning hidden">Tiada produk dipilih.</div>
     <h3>Pilihan Penghantaran</h3>
-    <label><input type="radio" name="ship" value="pos"> Pos</label>
-    <label><input type="radio" name="ship" value="cod"> COD</label>
-    <label><input type="radio" name="ship" value="pickup" checked> Self Pickup</label>
+    <label><input type="radio" name="ship" value="pos"> Pos (RM10/box)</label>
+    <label><input type="radio" name="ship" value="cod"> COD (Caj ikut jarak)</label>
+    <label><input type="radio" name="ship" value="pickup" checked> Self Pickup (RM0)</label>
     <div id="shipping-details" class="hidden">
       <label>Nama: <input type="text" id="customerName"></label>
       <label>Alamat: <input type="text" id="customerAddress"></label>
@@ -51,8 +51,8 @@
     <div id="cod-cost-input" class="hidden">
       <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0"></label>
     </div>
-    <div id="packaging-section">
-      <h4>Pilihan Pembungkusan (Pos sahaja)</h4>
+    <h3 id="packaging-header" class="hidden">Pilihan Pembungkusan</h3>
+    <div id="packaging-section" class="hidden">
       <label><input type="radio" name="pack" value="3" checked> Basic (RM3/box)</label>
       <label><input type="radio" name="pack" value="6"> Standard (RM6/box)</label>
     </div>
@@ -78,7 +78,6 @@
   </div>
 
   <script>
-    // Products including sold-out items with label
     const products = [
       { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. PS akan mula ambil Iris di TGV Gurney Paragon Pulau Pinang bermula 15/7/2025 secara berperingkat. Maksimum setiap pengambilan terhad hanya 8 box untuk satu perjalan.", stock: true },
       { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. PS akan mula ambil Iris di TGV Gurney Paragon Pulau Pinang bermula 15/7/2025 secara berperingkat. Maksimum setiap pengambilan terhad hanya 8 box untuk satu perjalan.", stock: true },
@@ -90,7 +89,6 @@
 
     function initProducts() {
       const container = document.getElementById("products-container");
-      container.innerHTML = "";
       products.forEach(prod => {
         const wrapper = document.createElement("div");
         const checkbox = document.createElement("input");
@@ -102,18 +100,17 @@
         const label = document.createElement("label");
         label.htmlFor = checkbox.id;
         label.textContent = prod.name + " (RM" + prod.price + ")";
+        wrapper.appendChild(label);
         if (!prod.stock) {
           label.textContent += " - Habis Stok";
-        }
-        if (prod.stock && prod.preorderInfo) {
-          const infoIcon = document.createElement("span");
-          infoIcon.className = "info-icon";
-          infoIcon.textContent = "i";
-          infoIcon.onclick = () => alert(prod.preorderInfo);
-          label.appendChild(infoIcon);
-        }
-        wrapper.appendChild(label);
-        if (prod.stock) {
+        } else {
+          if (prod.preorderInfo) {
+            const infoIcon = document.createElement("span");
+            infoIcon.className = "info-icon";
+            infoIcon.textContent = "i";
+            infoIcon.onclick = () => alert(prod.preorderInfo);
+            label.appendChild(infoIcon);
+          }
           const qtyWrapper = document.createElement("span");
           qtyWrapper.className = "qty-control";
           const minusBtn = document.createElement("button");
@@ -143,20 +140,20 @@
           wrapper.appendChild(qtyWrapper);
           const upahDiv = document.createElement("div");
           upahDiv.style.fontSize = "0.9em";
-          upahDiv.textContent = "Kos Upah: RM" + prod.upah;
+          upahDiv.textContent = "Kos Upah: RM" + prod.upah + "/box ";
           const upahIcon = document.createElement("span");
           upahIcon.className = "info-icon";
           upahIcon.textContent = "i";
-          upahIcon.onclick = () => alert("Upah yang dikernakan diambil kira berdasarkan masa pengurusan, masa perjalanan, menunggu, dan lain-lain.");
+          upahIcon.onclick = () => alert("Upah yang dikernakan dambil kira berdasarkan masa pengurusan, masa perjalanan menaiki pengangkutan awam (Komuter, Feri, Bas), masa menunggu di stesen pengangkutan awam masa menunggu, masa beratur dan lain-lain yang mana total keseluruhan mengambil masa selama 8 - 10 jam (mungkin lebih mengikut situasi semasa).");
           upahDiv.appendChild(upahIcon);
           wrapper.appendChild(upahDiv);
           const logDiv = document.createElement("div");
           logDiv.style.fontSize = "0.9em";
-          logDiv.textContent = "Kos Logistik: RM" + prod.logistic;
+          logDiv.textContent = "Kos Logistik: RM" + prod.logistic + "/box ";
           const logIcon = document.createElement("span");
           logIcon.className = "info-icon";
           logIcon.textContent = "i";
-          logIcon.onclick = () => alert("Kos ini merangkumi perjalanan pergi balik, angkut barang dan lain-lain.");
+          logIcon.onclick = () => alert("Kos ini merangkumi perjalan pergi dan balik menaiki pengangkutan awam, angkut barang dan lain-lain");
           logDiv.appendChild(logIcon);
           wrapper.appendChild(logDiv);
         }
@@ -164,27 +161,29 @@
       });
     }
 
-    // Shipping option change
-    document.addEventListener("change", (e) => {
-      if (e.target.name === "ship") {
-        const val = e.target.value;
+    document.querySelectorAll('input[name="ship"]').forEach(el => {
+      el.addEventListener('change', () => {
+        const val = document.querySelector('input[name="ship"]:checked').value;
         const shipDetails = document.getElementById("shipping-details");
         const codDetails = document.getElementById("cod-cost-input");
         const packagingSection = document.getElementById("packaging-section");
+        const packagingHeader = document.getElementById("packaging-header");
         if (val === 'pos') {
           shipDetails.classList.remove("hidden");
           packagingSection.classList.remove("hidden");
-          codDetails.classList.add("hidden");
+          packagingHeader.classList.remove("hidden");
         } else if (val === 'cod') {
           shipDetails.classList.remove("hidden");
           codDetails.classList.remove("hidden");
-          packagingSection.classList.add("hidden");
+          packagingSection.classList.remove("hidden");
+          packagingHeader.classList.remove("hidden");
         } else {
           shipDetails.classList.add("hidden");
           codDetails.classList.add("hidden");
           packagingSection.classList.add("hidden");
+          packagingHeader.classList.add("hidden");
         }
-      }
+      });
     });
 
     function gatherSelected() {
@@ -237,43 +236,53 @@
         totalBoxes += item.qty;
         const p = document.createElement("p");
         p.className = "summary-item";
-        p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}; Upah RM${item.upah} x${item.qty} = RM${(item.upah*item.qty).toFixed(2)}; Logistic RM${item.logistic} x${item.qty} = RM${(item.logistic*item.qty).toFixed(2)}`;
+        p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}`;
         summaryDiv.appendChild(p);
       });
+      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
+        innerHTML: `<strong>Total Upah</strong>: RM${totalUpah.toFixed(2)} (RM25/box)`,
+        className: "summary-item"
+      }));
+      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
+        innerHTML: `<strong>Total Logistik</strong>: RM${(selected.reduce((s,i)=>s+i.qty,0)*5).toFixed(2)} (RM5/box)`,
+        className: "summary-item"
+      }));
       const shipSel = document.querySelector('input[name="ship"]:checked').value;
-      if (shipSel === 'pos') {
+      if (shipSel === 'pos' || shipSel === 'cod') {
         const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
         totalPackCost = packCostPer * totalBoxes;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `Packaging: RM${packCostPer} x ${totalBoxes} kotak = RM${totalPackCost.toFixed(2)}`, className:"summary-item" }));
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
+          innerHTML: `<strong>Total Pembungkusan</strong>: RM${totalPackCost.toFixed(2)} (RM${packCostPer}/box)`,
+          className: "summary-item"
+        }));
       }
       if (shipSel === 'pos') {
         totalShipCost = 10 * totalBoxes;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `Kos Pos: RM10 x ${totalBoxes} kotak = RM${totalShipCost.toFixed(2)}`, className:"summary-item" }));
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
+          innerHTML: `<strong>Penghantaran Pos</strong>: RM10 x ${totalBoxes} kotak = RM${totalShipCost.toFixed(2)}`,
+          className: "summary-item"
+        }));
       } else if (shipSel === 'cod') {
         const codCost = parseFloat(document.getElementById("codCost").value) || 0;
         totalShipCost = codCost;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: `Kos COD: RM${totalShipCost.toFixed(2)}`, className:"summary-item" }));
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
+          innerHTML: `<strong>Penghantaran COD</strong>: RM${totalShipCost.toFixed(2)}`,
+          className: "summary-item"
+        }));
       } else {
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { textContent: "Kos Self Pickup: RM0", className:"summary-item" }));
+        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
+          innerHTML: `<strong>Self Pickup</strong>: RM0`,
+          className: "summary-item"
+        }));
       }
-      const grandTotal = totalPrice + totalUpah + (shipSel==='pos'?totalPackCost:0) + totalShipCost + totalUpah*0 - 0 + totalUpah*0 + totalUpah*0 + totalUpah*0 + totalUpah*0 + totalUpah*0 + totalUpah*0 + totalUpah*0 + totalUpah*0;
-      // Note: logistic and upah already included in lines above; grandTotal:
-      const totalLogisticCost = selected.reduce((s,i)=>s + i.logistic*i.qty,0);
-      const totalUpahCost = selected.reduce((s,i)=>s + i.upah*i.qty,0);
-      const totalPackagingCost = (shipSel==='pos') ? totalPackCost : 0;
-      const total = totalPrice + totalUpahCost + totalLogisticCost + totalPackagingCost + totalShipCost;
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Harga Produk</strong>: RM${totalPrice.toFixed(2)}`, className:"summary-item" }));
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Upah</strong>: RM${totalUpahCost.toFixed(2)}`, className:"summary-item" }));
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Logistik</strong>: RM${totalLogisticCost.toFixed(2)}`, className:"summary-item" }));
-      if (shipSel==='pos') {
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Pembungkusan</strong>: RM${totalPackagingCost.toFixed(2)}`, className:"summary-item" }));
-      }
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Penghantaran</strong>: RM${totalShipCost.toFixed(2)}`, className:"summary-item" }));
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), { innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${total.toFixed(2)}`, className:"summary-item" }));
+      const grandTotal = totalPrice + totalUpah + (totalBoxes*5) + totalPackCost + totalShipCost;
+      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
+        innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`,
+        className:"summary-item"
+      }));
       summaryDiv.dataset.totalPrice = totalPrice;
-      summaryDiv.dataset.totalUpah = totalUpahCost;
-      summaryDiv.dataset.totalPack = totalPackagingCost;
-      summaryDiv.dataset.totalLogistic = totalLogisticCost;
+      summaryDiv.dataset.totalUpah = totalUpah;
+      summaryDiv.dataset.totalPack = totalPackCost;
       summaryDiv.dataset.totalBoxes = totalBoxes;
       summaryDiv.dataset.totalShip = totalShipCost;
     }
@@ -285,16 +294,25 @@
 
     document.getElementById("confirmBtn").addEventListener("click", () => {
       const summaryDiv = document.getElementById("summary");
+      const totalPrice = parseFloat(summaryDiv.dataset.totalPrice);
+      const totalUpah = parseFloat(summaryDiv.dataset.totalUpah);
+      const totalPack = parseFloat(summaryDiv.dataset.totalPack);
+      const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes);
+      const totalShip = parseFloat(summaryDiv.dataset.totalShip);
       const selected = gatherSelected();
       const orderData = {
         timestamp: new Date().toISOString(),
         items: selected.map(item => `${item.code} x${item.qty}`).join("; "),
-        totalPrice: parseFloat(summaryDiv.dataset.totalPrice),
-        totalUpah: parseFloat(summaryDiv.dataset.totalUpah),
-        totalPack: parseFloat(summaryDiv.dataset.totalPack),
-        totalLogistic: parseFloat(summaryDiv.dataset.totalLogistic),
-        totalShip: parseFloat(summaryDiv.dataset.totalShip),
-        grandTotal: parseFloat(summaryDiv.querySelector('strong:last-child').parentNode.textContent.split('RM')[1])
+        totalPrice,
+        totalUpah,
+        totalPack,
+        totalShip,
+        totalPackaging: totalPack,
+        totalLogistic: totalBoxes * 5,
+        grandTotal: totalPrice + totalUpah + (totalBoxes*5) + totalPack + totalShip,
+        customerName: document.getElementById("customerName")?.value.trim() || "",
+        customerAddress: document.getElementById("customerAddress")?.value.trim() || "",
+        customerPhone: document.getElementById("customerPhone")?.value.trim() || ""
       };
       const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
       if (scriptURL && !scriptURL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
