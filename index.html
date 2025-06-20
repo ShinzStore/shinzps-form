@@ -1,10 +1,19 @@
+import os
+from zipfile import ZipFile
+from datetime import datetime
 
+# Directory setup for v1.0 update
+base_dir = "/mnt/data/shinzps_v1.0_full"
+os.makedirs(base_dir, exist_ok=True)
+
+# HTML content updated with robust logging and instructions
+html_content = """
 <!DOCTYPE html>
 <html lang="ms">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShinZ PS Order Form v0.9</title>
+  <title>ShinZ PS Order Form v1.0</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     h2 { text-align: center; }
@@ -27,7 +36,7 @@
   </style>
 </head>
 <body>
-  <h2>ShinZ Personal Shopper Order Form v0.9</h2>
+  <h2>ShinZ Personal Shopper Order Form v1.0</h2>
   <div class="section">
     <div class="flex-row">
       <span><strong>MGC-S174 (SOLEHUDDIN)</strong></span>
@@ -78,6 +87,7 @@
   </div>
 
   <script>
+    // Produk list
     const products = [
       { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. PS akan mula ambil Iris di TGV Gurney Paragon Pulau Pinang bermula 15/7/2025 secara berperingkat. Maksimum setiap pengambilan terhad hanya 8 box untuk satu perjalan.", stock: true },
       { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. PS akan mula ambil Iris di TGV Gurney Paragon Pulau Pinang bermula 15/7/2025 secara berperingkat. Maksimum setiap pengambilan terhad hanya 8 box untuk satu perjalan.", stock: true },
@@ -129,31 +139,27 @@
           });
           minusBtn.addEventListener("click", () => {
             let qty = parseInt(qtyDisplay.textContent);
-            if (qty > 0) {
-              qtyDisplay.textContent = qty - 1;
-              if (qty - 1 === 0) checkbox.checked = false;
-            }
+            if (qty > 0) { qtyDisplay.textContent = qty - 1; if (qty-1===0) checkbox.checked=false; }
           });
           qtyWrapper.appendChild(minusBtn);
           qtyWrapper.appendChild(qtyDisplay);
           qtyWrapper.appendChild(plusBtn);
           wrapper.appendChild(qtyWrapper);
+          // Upah & logistik info
           const upahDiv = document.createElement("div");
           upahDiv.style.fontSize = "0.9em";
           upahDiv.textContent = "Kos Upah: RM" + prod.upah + "/box ";
           const upahIcon = document.createElement("span");
-          upahIcon.className = "info-icon";
-          upahIcon.textContent = "i";
-          upahIcon.onclick = () => alert("Upah yang dikernakan dambil kira berdasarkan masa pengurusan, masa perjalanan menaiki pengangkutan awam (Komuter, Feri, Bas), masa menunggu di stesen pengangkutan awam masa menunggu, masa beratur dan lain-lain yang mana total keseluruhan mengambil masa selama 8 - 10 jam (mungkin lebih mengikut situasi semasa).");
+          upahIcon.className = "info-icon"; upahIcon.textContent = "i";
+          upahIcon.onclick = () => alert("Upah dikira berdasarkan masa pengurusan & perjalanan awam ~8-10 jam.");
           upahDiv.appendChild(upahIcon);
           wrapper.appendChild(upahDiv);
           const logDiv = document.createElement("div");
           logDiv.style.fontSize = "0.9em";
           logDiv.textContent = "Kos Logistik: RM" + prod.logistic + "/box ";
           const logIcon = document.createElement("span");
-          logIcon.className = "info-icon";
-          logIcon.textContent = "i";
-          logIcon.onclick = () => alert("Kos ini merangkumi perjalan pergi dan balik menaiki pengangkutan awam, angkut barang dan lain-lain");
+          logIcon.className = "info-icon"; logIcon.textContent = "i";
+          logIcon.onclick = () => alert("Kos merangkumi perjalanan pergi balik & angkut barang.");
           logDiv.appendChild(logIcon);
           wrapper.appendChild(logDiv);
         }
@@ -172,6 +178,7 @@
           shipDetails.classList.remove("hidden");
           packagingSection.classList.remove("hidden");
           packagingHeader.classList.remove("hidden");
+          codDetails.classList.add("hidden");
         } else if (val === 'cod') {
           shipDetails.classList.remove("hidden");
           codDetails.classList.remove("hidden");
@@ -190,156 +197,166 @@
       const selected = [];
       products.forEach(prod => {
         const qtyEl = document.getElementById("qty-display-" + prod.code);
-        if (qtyEl) {
-          const qty = parseInt(qtyEl.textContent);
-          if (qty > 0) selected.push({ ...prod, qty });
-        }
+        if (qtyEl) { const qty = parseInt(qtyEl.textContent); if (qty>0) selected.push({ ...prod, qty }); }
       });
       return selected;
     }
 
     document.getElementById("toReview").addEventListener("click", () => {
-      const selected = gatherSelected();
-      if (selected.length === 0) {
-        document.getElementById("no-stock-message").classList.remove("hidden");
-        return;
-      }
+      const selected=gatherSelected();
+      if(selected.length===0){ document.getElementById("no-stock-message").classList.remove("hidden"); return; }
       document.getElementById("no-stock-message").classList.add("hidden");
-      const ship = document.querySelector('input[name="ship"]:checked');
-      if (!ship) {
-        alert("Sila pilih penghantaran.");
-        return;
-      }
-      if (ship.value === 'pos' || ship.value === 'cod') {
-        const name = document.getElementById("customerName").value.trim();
-        const address = document.getElementById("customerAddress").value.trim();
-        const phone = document.getElementById("customerPhone").value.trim();
-        if (!name || !address || !phone) {
-          alert("Sila isi Nama, Alamat, dan Nombor Telefon.");
-          return;
-        }
+      const ship=document.querySelector('input[name="ship"]:checked');
+      if(!ship){ alert("Sila pilih penghantaran."); return; }
+      if(ship.value==='pos'||ship.value==='cod'){
+        const name=document.getElementById("customerName").value.trim();
+        const address=document.getElementById("customerAddress").value.trim();
+        const phone=document.getElementById("customerPhone").value.trim();
+        if(!name||!address||!phone){ alert("Sila isi Nama, Alamat, dan Nombor Telefon."); return; }
       }
       showSummary(selected);
-      document.getElementById("orderIdDisplayReview").textContent = "(akan dijana)";
+      document.getElementById("orderIdDisplayReview").textContent="(akan dijana)";
       document.getElementById("section-select").classList.add("hidden");
       document.getElementById("section-review").classList.remove("hidden");
     });
 
     function showSummary(selected) {
-      const summaryDiv = document.getElementById("summary");
-      summaryDiv.innerHTML = "";
-      let totalPrice = 0, totalUpah = 0, totalPackCost = 0, totalShipCost = 0;
-      let totalBoxes = 0;
-      selected.forEach(item => {
-        totalPrice += item.price * item.qty;
-        totalUpah += item.upah * item.qty;
-        totalBoxes += item.qty;
-        const p = document.createElement("p");
-        p.className = "summary-item";
-        p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}`;
+      const summaryDiv=document.getElementById("summary");
+      summaryDiv.innerHTML="";
+      let totalPrice=0, totalUpah=0, totalPackCost=0, totalShipCost=0, totalBoxes=0;
+      selected.forEach(item=>{ totalPrice+=item.price*item.qty; totalUpah+=item.upah*item.qty; totalBoxes+=item.qty;
+        const p=document.createElement("p"); p.className="summary-item";
+        p.innerHTML=`${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}`;
         summaryDiv.appendChild(p);
       });
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-        innerHTML: `<strong>Total Upah</strong>: RM${totalUpah.toFixed(2)} (RM25/box)`,
-        className: "summary-item"
-      }));
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-        innerHTML: `<strong>Total Logistik</strong>: RM${(selected.reduce((s,i)=>s+i.qty,0)*5).toFixed(2)} (RM5/box)`,
-        className: "summary-item"
-      }));
-      const shipSel = document.querySelector('input[name="ship"]:checked').value;
-      if (shipSel === 'pos' || shipSel === 'cod') {
-        const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value);
-        totalPackCost = packCostPer * totalBoxes;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Total Pembungkusan</strong>: RM${totalPackCost.toFixed(2)} (RM${packCostPer}/box)`,
-          className: "summary-item"
-        }));
+      summaryDiv.appendChild(Object.assign(document.createElement("p"),{ innerHTML:`<strong>Total Upah</strong>: RM${totalUpah.toFixed(2)} (RM25/box)`, className:"summary-item"}));
+      summaryDiv.appendChild(Object.assign(document.createElement("p"),{ innerHTML:`<strong>Total Logistik</strong>: RM${(totalBoxes*5).toFixed(2)} (RM5/box)`, className:"summary-item"}));
+      const shipSel=document.querySelector('input[name="ship"]:checked').value;
+      if(shipSel==='pos'||shipSel==='cod'){
+        const packCostPer=parseFloat(document.querySelector('input[name="pack"]:checked').value);
+        totalPackCost=packCostPer*totalBoxes;
+        summaryDiv.appendChild(Object.assign(document.createElement("p"),{ innerHTML:`<strong>Total Pembungkusan</strong>: RM${totalPackCost.toFixed(2)} (RM${packCostPer}/box)`, className:"summary-item"}));
       }
-      if (shipSel === 'pos') {
-        totalShipCost = 10 * totalBoxes;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Penghantaran Pos</strong>: RM10 x ${totalBoxes} kotak = RM${totalShipCost.toFixed(2)}`,
-          className: "summary-item"
-        }));
-      } else if (shipSel === 'cod') {
-        const codCost = parseFloat(document.getElementById("codCost").value) || 0;
-        totalShipCost = codCost;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Penghantaran COD</strong>: RM${totalShipCost.toFixed(2)}`,
-          className: "summary-item"
-        }));
+      if(shipSel==='pos'){
+        totalShipCost=10*totalBoxes;
+        summaryDiv.appendChild(Object.assign(document.createElement("p"),{ innerHTML:`<strong>Penghantaran Pos</strong>: RM10 x ${totalBoxes} kotak = RM${totalShipCost.toFixed(2)}`, className:"summary-item"}));
+      } else if(shipSel==='cod'){
+        const codCost=parseFloat(document.getElementById("codCost").value)||0;
+        totalShipCost=codCost;
+        summaryDiv.appendChild(Object.assign(document.createElement("p"),{ innerHTML:`<strong>Penghantaran COD</strong>: RM${totalShipCost.toFixed(2)}`, className:"summary-item"}));
       } else {
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Self Pickup</strong>: RM0`,
-          className: "summary-item"
-        }));
+        summaryDiv.appendChild(Object.assign(document.createElement("p"),{ innerHTML:`<strong>Self Pickup</strong>: RM0`, className:"summary-item"}));
       }
-      const grandTotal = totalPrice + totalUpah + (totalBoxes*5) + totalPackCost + totalShipCost;
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-        innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`,
-        className:"summary-item"
-      }));
-      summaryDiv.dataset.totalPrice = totalPrice;
-      summaryDiv.dataset.totalUpah = totalUpah;
-      summaryDiv.dataset.totalPack = totalPackCost;
-      summaryDiv.dataset.totalBoxes = totalBoxes;
-      summaryDiv.dataset.totalShip = totalShipCost;
+      const grandTotal=totalPrice+totalUpah+(totalBoxes*5)+totalPackCost+totalShipCost;
+      summaryDiv.appendChild(Object.assign(document.createElement("p"),{ innerHTML:`<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`, className:"summary-item"}));
+      summaryDiv.dataset.totalPrice=totalPrice; summaryDiv.dataset.totalUpah=totalUpah;
+      summaryDiv.dataset.totalPack=totalPackCost; summaryDiv.dataset.totalBoxes=totalBoxes; summaryDiv.dataset.totalShip=totalShipCost;
     }
 
-    document.getElementById("backBtn").addEventListener("click", () => {
+    document.getElementById("backBtn").addEventListener("click",()=>{
       document.getElementById("section-review").classList.add("hidden");
       document.getElementById("section-select").classList.remove("hidden");
     });
 
-    document.getElementById("confirmBtn").addEventListener("click", () => {
-      const summaryDiv = document.getElementById("summary");
-      const totalPrice = parseFloat(summaryDiv.dataset.totalPrice);
-      const totalUpah = parseFloat(summaryDiv.dataset.totalUpah);
-      const totalPack = parseFloat(summaryDiv.dataset.totalPack);
-      const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes);
-      const totalShip = parseFloat(summaryDiv.dataset.totalShip);
-      const selected = gatherSelected();
-      const orderData = {
-        timestamp: new Date().toISOString(),
-        items: selected.map(item => `${item.code} x${item.qty}`).join("; "),
-        totalPrice,
-        totalUpah,
-        totalPack,
-        totalShip,
-        totalPackaging: totalPack,
-        totalLogistic: totalBoxes * 5,
-        grandTotal: totalPrice + totalUpah + (totalBoxes*5) + totalPack + totalShip,
-        customerName: document.getElementById("customerName")?.value.trim() || "",
-        customerAddress: document.getElementById("customerAddress")?.value.trim() || "",
-        customerPhone: document.getElementById("customerPhone")?.value.trim() || ""
+    document.getElementById("confirmBtn").addEventListener("click",()=>{
+      const summaryDiv=document.getElementById("summary");
+      const totalPrice=parseFloat(summaryDiv.dataset.totalPrice);
+      const totalUpah=parseFloat(summaryDiv.dataset.totalUpah);
+      const totalPack=parseFloat(summaryDiv.dataset.totalPack);
+      const totalBoxes=parseInt(summaryDiv.dataset.totalBoxes);
+      const totalShip=parseFloat(summaryDiv.dataset.totalShip);
+      const selected=gatherSelected();
+      const orderData={
+        timestamp:new Date().toISOString(),
+        items:selected.map(item=>`${item.code} x${item.qty}`).join("; "),
+        totalPrice,totalUpah,totalPack,totalShip,
+        totalPackaging:totalPack,totalLogistic:totalBoxes*5,
+        grandTotal:totalPrice+totalUpah+(totalBoxes*5)+totalPack+totalShip,
+        customerName:document.getElementById("customerName")?.value.trim()||"",
+        customerAddress:document.getElementById("customerAddress")?.value.trim()||"",
+        customerPhone:document.getElementById("customerPhone")?.value.trim()||""
       };
-      const scriptURL = 'https://script.google.com/macros/s/AKfycby2AIB2s9Kn-sxt_PfZ1pQ4pvq95VC3sSi4cSGJgTh9yqGL7F8M54Mb86sn8T2qMQdcUQ/exec';
-      if (scriptURL && !scriptURL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
-        fetch(scriptURL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderData)
-        })
-        .then(response => response.json())
-        .then(data => {
-          const orderId = data.orderId || '(tiada ID)';
-          document.getElementById("orderIdDisplay").textContent = orderId;
-          document.getElementById("orderIdDisplayReview").textContent = orderId;
-          document.getElementById("section-review").classList.add("hidden");
-          document.getElementById("section-confirm").classList.remove("hidden");
-        })
-        .catch(error => {
-          console.error('Error!', error.message);
-          alert('Terdapat masalah menghantar data. Sila cuba lagi.');
+      const scriptURL='YOUR_GOOGLE_APPS_SCRIPT_URL'; // Gantikan dengan URL Web App
+      console.log("Sending data:",orderData);
+      if(scriptURL&& !scriptURL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')){
+        fetch(scriptURL,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(orderData)
+        }).then(response=>{
+          console.log("Response status:",response.status,response.statusText);
+          return response.text().then(text=>{ console.log("Response body:",text); try{return JSON.parse(text);}catch(e){throw new Error("Invalid JSON: "+text);} });
+        }).then(data=>{
+          if(data.orderId){
+            document.getElementById("orderIdDisplay").textContent=data.orderId;
+            document.getElementById("orderIdDisplayReview").textContent=data.orderId;
+            document.getElementById("section-review").classList.add("hidden");
+            document.getElementById("section-confirm").classList.remove("hidden");
+          } else if(data.error){
+            alert("Ralat server: "+data.error);
+          } else {
+            alert("Response tidak mengandungi orderId."); console.error("Unexpected response:",data);
+          }
+        }).catch(error=>{
+          console.error("Fetch error:",error);
+          alert("Terdapat masalah menghantar data: "+error.message);
         });
       } else {
-        alert('Sila tetapkan scriptURL untuk dapatkan Order ID automatik.');
+        alert("Sila tetapkan scriptURL untuk dapatkan Order ID automatik.");
       }
     });
 
-    window.onload = initProducts;
+    // Initialize on load
+    window.onload=initProducts;
   </script>
 </body>
 </html>
+"""
+
+# Save index.html
+html_path = os.path.join(base_dir, "index.html")
+with open(html_path, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+# Apps Script file for doPost
+apps_script_content = """
+function doPost(e) {
+  try {
+    Logger.log('Request received: ' + e.postData.contents);
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const now = new Date();
+    const monthNames = ["JAN","FEB","MAC","APR","MEI","JUN","JUL","OGS","SEP","OKT","NOV","DIS"];
+    const sheetName = monthNames[now.getMonth()] + " " + now.getFullYear();
+    let sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      sheet.appendRow(["Order ID","Timestamp","Items","Total Price","Total Upah","Total Packaging","Total Shipping","Total Logistik","Grand Total","Customer Name","Customer Address","Customer Phone"]);
+    }
+    const lastRow = sheet.getLastRow();
+    const seq = lastRow;
+    const yy = now.getFullYear().toString().substr(2,2);
+    const mm = String(now.getMonth()+1).padStart(2,'0');
+    const orderId = `PSTGV-${yy}${mm}-${String(seq).padStart(3,'0')}`;
+    sheet.appendRow([orderId, data.timestamp, data.items, data.totalPrice, data.totalUpah, data.totalPackaging, data.totalShip || data.totalShipping, data.totalLogistic, data.grandTotal, data.customerName, data.customerAddress, data.customerPhone]);
+    return ContentService.createTextOutput(JSON.stringify({orderId: orderId})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    Logger.log('Error: ' + err);
+    return ContentService.createTextOutput(JSON.stringify({error: err.message})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+"""
+
+# Save Apps Script file
+gs_path = os.path.join(base_dir, "apps_script.gs")
+with open(gs_path, "w", encoding="utf-8") as f:
+    f.write(apps_script_content)
+
+# Create ZIP file
+timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+zip_path = f"/mnt/data/shinzps_v1.0_full_{timestamp}.zip"
+with ZipFile(zip_path, 'w') as zipf:
+    zipf.write(html_path, arcname="index.html")
+    zipf.write(gs_path, arcname="apps_script.gs")
+
+zip_path
