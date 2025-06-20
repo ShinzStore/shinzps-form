@@ -4,21 +4,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borang PS</title>
+  <title>ShinZ PS Order Form</title>
 </head>
 <body>
-  <h1>Borang Personal Shopper</h1>
-  <label>Nama:</label><br>
-  <input type="text" id="nama"><br><br>
+  <h2>ShinZ Personal Shopper Order Form</h2>
+  <!-- Simplest example: user fills name and example orderData-->
+  <form id="orderForm">
+    <label>Nama: <input type="text" id="customerName" required></label><br>
+    <label>No Telefon: <input type="tel" id="customerPhone" required></label><br>
+    <label>Alamat: <input type="text" id="customerAddress" required></label><br>
+    <button type="button" id="submitBtn">Hantar Order Contoh</button>
+  </form>
+  <div id="response"></div>
 
-  <label>Alamat:</label><br>
-  <input type="text" id="alamat"><br><br>
-
-  <label>Produk:</label><br>
-  <input type="text" id="produk"><br><br>
-
-  <button id="submitBtn">Hantar</button>
-
-  <script src="main.js"></script>
+  <script>
+    document.getElementById("submitBtn").addEventListener("click", function() {
+      const orderData = {
+        timestamp: new Date().toISOString(),
+        items: "IEA x1",  // contoh; integrasi sebenar perlu lookup kuantiti
+        totalPrice: 70,
+        totalUpah: 25,
+        totalPackaging: 3,
+        totalLogistic: 5,
+        totalShip: 10,
+        grandTotal: 70 + 25 + 3 + 5 + 10,
+        customerName: document.getElementById("customerName").value,
+        customerAddress: document.getElementById("customerAddress").value,
+        customerPhone: document.getElementById("customerPhone").value
+      };
+      fetch("https://script.google.com/macros/s/AKfycbwXi3WXEVXjMqqblsQxnqfsNhW5Tf5rYwIWEjwiNQOyf1y24FvWPE3M36TVStMeekg1Cw/exec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.orderId) {
+          document.getElementById("response").innerText = "Order berjaya: " + data.orderId;
+        } else if (data.status === "error") {
+          document.getElementById("response").innerText = "Error: " + data.message;
+        } else {
+          document.getElementById("response").innerText = "Respons tidak dijangka: " + JSON.stringify(data);
+        }
+      })
+      .catch(err => {
+        document.getElementById("response").innerText = "Fetch error: " + err;
+      });
+    });
+  </script>
 </body>
 </html>
