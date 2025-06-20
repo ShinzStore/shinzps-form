@@ -1,4 +1,1 @@
-document.getElementById('psForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  alert('Borang dihantar (simulasi)!');
-});
+console.log("Script Borang PS v0.1 dimuatkan");
