@@ -314,7 +314,7 @@
         customerAddress: document.getElementById("customerAddress")?.value.trim() || "",
         customerPhone: document.getElementById("customerPhone")?.value.trim() || ""
       };
-      const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+      const scriptURL = 'https://script.google.com/macros/s/AKfycbwXi3WXEVXjMqqblsQxnqfsNhW5Tf5rYwIWEjwiNQOyf1y24FvWPE3M36TVStMeekg1Cw/exec';
       if (scriptURL && !scriptURL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
         fetch(scriptURL, {
           method: 'POST',
