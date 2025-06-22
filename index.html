@@ -17,6 +17,7 @@
     .btn { padding: 8px 16px; margin: 5px 0; cursor: pointer; border: none; border-radius: 4px; }
     .btn-primary { background: #007bff; color: white; }
     .btn-secondary { background: #6c757d; color: white; }
+    .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
     .info-icon { display: inline-block; width: 16px; height: 16px; border: 1px solid #333; border-radius: 50%; 
                  text-align: center; line-height: 14px; font-size: 12px; cursor: pointer; margin-left: 4px; }
     .hidden { display: none; }
@@ -52,7 +53,7 @@
       <label>Nombor Telefon: <input type="tel" id="customerPhone" required></label>
     </div>
     <div id="cod-cost-input" class="hidden">
-      <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0"></label>
+      <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" value="0"></label>
     </div>
 
     <h3 id="packaging-header" class="hidden">Pilihan Pembungkusan</h3>
@@ -75,13 +76,10 @@
     <button type="button" id="confirmBtn" class="btn btn-primary">Sahkan Order</button>
   </div>
 
-  <!-- Section Confirmation:
-       Halaman ini sebenarnya dipaparkan oleh Apps Script Web App (doPost),
-       selepas hiddenForm.submit() membuka tab baru. -->
-  <!-- (Tidak digunakan di frontend statik; balasan dari server akan paparkan Order ID.) -->
-
-  <!-- Form tersembunyi untuk POST ke Apps Script -->
-  <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbwGf1ElOPewtel-s7PtXOL2nDnyt800FYKeOdxHpednfEUttHkqRdkuOqRw4pGAwpIyqw/exec" method="POST" target="_blank" class="hidden">
+  <!-- Hidden Form untuk POST -->
+  <form id="hiddenForm"
+        action="https://script.google.com/macros/s/AKfycbwGf1ElOPewtel-s7PtXOL2nDnyt800FYKeOdxHpednfEUttHkqRdkuOqRw4pGAwpIyqw/exec"
+        method="POST" target="_blank" class="hidden">
     <input type="hidden" name="items" id="field-items">
     <input type="hidden" name="totalPrice" id="field-totalPrice">
     <input type="hidden" name="totalUpah" id="field-totalUpah">
@@ -92,6 +90,11 @@
     <input type="hidden" name="customerName" id="field-customerName">
     <input type="hidden" name="customerAddress" id="field-customerAddress">
     <input type="hidden" name="customerPhone" id="field-customerPhone">
+    <!-- Hidden tambahan untuk kaedah penghantaran & pembungkusan -->
+    <input type="hidden" name="shippingMethod" id="field-shippingMethod">
+    <input type="hidden" name="packaging" id="field-packaging">
+    <!-- Jika Apps Script perlukan kolum Status Pesanan / Kaedah Bayaran dsb., tambah di sini -->
+    <!-- <input type="hidden" name="statusPesanan" id="field-statusPesanan" value="Baru"> -->
   </form>
 
   <script>
@@ -102,17 +105,15 @@
       { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, logistic: 5,
         preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. Maksimum 8 box per perjalanan.", stock: true },
       { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, logistic: 5,
-        preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. Maksimum 8 box per perjalanan.", stock: true },
+        preorderInfo: "Pengambil Iris bermmula 15/7/2025 di cawangan TGV terpilih. Maksimum 8 box per perjalanan.", stock: true },
       { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 15, logistic: 5, stock: false },
       { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 15, logistic: 5, stock: false },
       { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 15, logistic: 5, stock: false },
       { name: "Kad Kecemasan Keluangman", code: "IDKM", price: 11.5, upah: 15, logistic: 5, stock: false }
     ];
 
-    // URL Apps Script Web App (POST endpoint), ganti dengan URL anda jika berbeza
     const scriptURL = "https://script.google.com/macros/s/AKfycbwGf1ElOPewtel-s7PtXOL2nDnyt800FYKeOdxHpednfEUttHkqRdkuOqRw4pGAwpIyqw/exec";
 
-    // Populate senarai produk dengan butang +/- dan info
     function initProducts() {
       console.log("initProducts dipanggil");
       const container = document.getElementById("products-container");
@@ -231,7 +232,7 @@
             codDetails.classList.remove("hidden");
             packagingHeader.classList.remove("hidden");
             packagingSection.classList.remove("hidden");
-          } else { // pickup
+          } else {
             shipDetails.classList.add("hidden");
             codDetails.classList.add("hidden");
             packagingHeader.classList.add("hidden");
@@ -241,13 +242,13 @@
       });
     }
 
-    // Kumpul pilihan produk yang qty > 0
+    // Kumpul pilihan produk
     function gatherSelected() {
       const selected = [];
       products.forEach(prod => {
         const qtyEl = document.getElementById("qty-display-" + prod.code);
         if (qtyEl) {
-          const qty = parseInt(qtyEl.textContent);
+          const qty = parseInt(qtyDisplay.textContent) || parseInt(qtyEl.textContent);
           if (qty > 0) selected.push({ ...prod, qty });
         }
       });
@@ -282,7 +283,6 @@
             return;
           }
         }
-        // Papar ringkasan
         showSummary(selected);
         document.getElementById("orderIdDisplayReview").textContent = "(dijana di server)";
         document.getElementById("section-select").classList.add("hidden");
@@ -296,28 +296,29 @@
         document.getElementById("section-select").classList.remove("hidden");
       });
 
-      // Butang Sahkan Order → isi hiddenForm dan submit
+      // Butang Sahkan Order
       document.getElementById("confirmBtn").addEventListener("click", () => {
         console.log("Klik Sahkan Order");
+        const btn = document.getElementById("confirmBtn");
+        // Lumpuhkan butang segera untuk elak klik berganda
+        btn.disabled = true;
+        btn.textContent = "Menghantar...";
         const summaryDiv = document.getElementById("summary");
-        const totalPrice = parseFloat(summaryDiv.dataset.totalPrice);
-        const totalUpah = parseFloat(summaryDiv.dataset.totalUpah);
-        const totalPack = parseFloat(summaryDiv.dataset.totalPack);
-        const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes);
-        // Hitung totalShipping bergantung pilihan
+        const totalPrice = parseFloat(summaryDiv.dataset.totalPrice) || 0;
+        const totalUpah = parseFloat(summaryDiv.dataset.totalUpah) || 0;
+        const totalPack = parseFloat(summaryDiv.dataset.totalPack) || 0;
+        const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes) || 0;
         let totalShip = 0;
         const shipSel = document.querySelector('input[name="ship"]:checked').value;
         if (shipSel === 'pos') {
           totalShip = 10 * totalBoxes;
         } else if (shipSel === 'cod') {
           totalShip = parseFloat(document.getElementById("codCost").value) || 0;
-        } else {
-          totalShip = 0;
         }
         const totalLogistic = totalBoxes * 5;
         const grandTotal = totalPrice + totalUpah + totalPack + totalShip + totalLogistic;
 
-        // Isi field hidden form untuk POST
+        // Isi hidden fields
         document.getElementById("field-items").value = gatherSelected().map(item => `${item.code} x${item.qty}`).join("; ");
         document.getElementById("field-totalPrice").value = totalPrice;
         document.getElementById("field-totalUpah").value = totalUpah;
@@ -328,9 +329,22 @@
         document.getElementById("field-customerName").value = document.getElementById("customerName").value.trim();
         document.getElementById("field-customerAddress").value = document.getElementById("customerAddress").value.trim();
         document.getElementById("field-customerPhone").value = document.getElementById("customerPhone").value.trim();
+        document.getElementById("field-shippingMethod").value = shipSel;
+        // packaging hanya bila pos atau cod
+        let packVal = "";
+        if (shipSel === 'pos' || shipSel === 'cod') {
+          packVal = document.querySelector('input[name="pack"]:checked').value;
+        }
+        document.getElementById("field-packaging").value = packVal;
 
-        // Submit hidden form → buka tab baru dengan balasan Apps Script
+        // Submit hidden form → tab baru
         document.getElementById("hiddenForm").submit();
+
+        // Anda boleh re-enable butang setelah beberapa detik jika mahu:
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = "Sahkan Order";
+        }, 5000);
       });
     });
 
@@ -350,7 +364,6 @@
         p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}`;
         summaryDiv.appendChild(p);
       });
-      // Upah & logistik
       summaryDiv.appendChild(Object.assign(document.createElement("p"), {
         innerHTML: `<strong>Total Upah</strong>: RM${totalUpah.toFixed(2)} (RM25/box)`,
         className: "summary-item"
@@ -359,7 +372,6 @@
         innerHTML: `<strong>Total Logistik</strong>: RM${(totalBoxes*5).toFixed(2)} (RM5/box)`,
         className: "summary-item"
       }));
-      // Pembungkusan & penghantaran
       const shipSel = document.querySelector('input[name="ship"]:checked').value;
       let totalPackCostLocal = 0;
       if (shipSel === 'pos' || shipSel === 'cod') {
@@ -395,7 +407,7 @@
         innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`,
         className:"summary-item"
       }));
-      // Simpan data dalam dataset untuk submit
+      // Simpan data dalam dataset
       summaryDiv.dataset.totalPrice = totalPrice;
       summaryDiv.dataset.totalUpah = totalUpah;
       summaryDiv.dataset.totalPack = totalPackCostLocal;
