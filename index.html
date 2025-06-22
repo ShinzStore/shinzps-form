@@ -1,132 +1,150 @@
-qtyWrapper.appendChild(plusBtn);
-          wrapper.appendChild(qtyWrapper);
-        }
-
-        container.appendChild(wrapper);
-      });
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Borang Personal Shopper ShinZ</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .section-title { font-weight: bold; font-size: 1.2rem; margin-top: 1rem; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
+    .readonly { background-color: #f3f4f6; }
+  </style>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 space-y-4">
+    <h1 class="text-2xl font-bold text-center">Borang Pesanan Servis Personal Shopper ShinZ</h1>
+    
+    <div id="notice" class="bg-yellow-100 border border-yellow-400 text-yellow-800 p-3 rounded">
+      <strong>Notis:</strong> Semua kad edisi khas adalah terhad. Stok tidak dijamin sehingga anda selesaikan pembayaran. Order ID akan dijana selepas anda hantar borang.
+    </div>
 
-    function getSelectedProducts() {
-      const selected = [];
-      products.forEach(prod => {
-        const checkbox = document.getElementById("prod-" + prod.code);
-        const qtyDisplay = document.getElementById("qty-display-" + prod.code);
-        if (checkbox && checkbox.checked && qtyDisplay) {
-          const qty = parseInt(qtyDisplay.textContent);
-          if (qty > 0) {
-            selected.push({
-              ...prod,
-              qty,
-              subtotal: qty * prod.price,
-              totalUpah: qty * prod.upah,
-              totalLogistic: qty * prod.logistic
-            });
-          }
-        }
+    <form id="psForm" class="space-y-4">
+      <!-- Maklumat Pelanggan -->
+      <div>
+        <h2 class="section-title">Maklumat Pelanggan</h2>
+        <label class="block">Nama Penuh:
+          <input type="text" name="nama" required class="mt-1 p-2 border rounded w-full" />
+        </label>
+        <label class="block mt-2">No Telefon:
+          <input type="tel" name="telefon" required class="mt-1 p-2 border rounded w-full" />
+        </label>
+        <label class="block mt-2">Alamat Penuh:
+          <textarea name="alamat" required class="mt-1 p-2 border rounded w-full"></textarea>
+        </label>
+      </div>
+
+      <!-- Pilih Produk -->
+      <div>
+        <h2 class="section-title">Pilih Produk (boleh pilih lebih dari satu)</h2>
+        <div>
+          <label><input type="checkbox" name="produk" value="Iris Ejen Ali|70" /> Kad Iris Ejen Ali (RM70)</label><br/>
+          <label><input type="checkbox" name="produk" value="Alicia Ejen Ali|70" /> Kad Alicia Ejen Ali (RM70)</label><br/>
+          <label><input type="checkbox" name="produk" value="Kad Kecemasan Keluang Man|15" /> Kad Kecemasan Keluang Man (RM15)</label><br/>
+          <label><input type="checkbox" name="produk" value="Kad Satria|19" /> Kad Satria (eCombo TGV, RM19)</label><br/>
+        </div>
+      </div>
+
+      <!-- Pilihan Wrap dan Pos -->
+      <div>
+        <h2 class="section-title">Pilihan Pembungkusan dan Pos</h2>
+        <label>Jenis Wrap:
+          <select name="wrap" class="mt-1 p-2 border rounded w-full">
+            <option value="10">Wrap Biasa (RM10)</option>
+            <option value="13">Wrap Tebal (RM13)</option>
+          </select>
+        </label>
+        <label class="block mt-2">Kaedah Penghantaran:
+          <select name="pos" class="mt-1 p-2 border rounded w-full">
+            <option value="0">COD (ambil sendiri)</option>
+            <option value="8">Post (RM8)</option>
+            <option value="10">Laju (RM10)</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Maklumat Pembayaran -->
+      <div>
+        <h2 class="section-title">Bukti Pembayaran</h2>
+        <label class="block">Kaedah Pembayaran:
+          <select name="bayaran" class="mt-1 p-2 border rounded w-full">
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Touch 'n Go">Touch 'n Go</option>
+            <option value="QR DuitNow">QR DuitNow</option>
+          </select>
+        </label>
+        <label class="block mt-2">Upload Resit Pembayaran:
+          <input type="file" name="resit" accept="image/*,.pdf" required class="mt-1 p-2 border rounded w-full" />
+        </label>
+      </div>
+
+      <!-- Nota & T&S -->
+      <div>
+        <h2 class="section-title">Nota Tambahan (jika ada)</h2>
+        <textarea name="nota" class="mt-1 p-2 border rounded w-full" placeholder="Contoh: Nak letak nama penerima atas kad..."></textarea>
+      </div>
+
+      <!-- Ringkasan & Submit -->
+      <div>
+        <h2 class="section-title">Ringkasan & Hantar</h2>
+        <p class="text-sm text-gray-600">Jumlah harga akan dikira selepas klik "Hantar Borang". Sila pastikan semua maklumat diisi.</p>
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Hantar Borang</button>
+      </div>
+    </form>
+    
+    <div id="hasil" class="hidden mt-6 p-4 bg-green-100 text-green-800 rounded"></div>
+  </div>
+
+  <script>
+    document.getElementById("psForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      const form = e.target;
+      const nama = form.nama.value.trim();
+      const telefon = form.telefon.value.trim();
+      const alamat = form.alamat.value.trim();
+      const wrap = parseFloat(form.wrap.value);
+      const pos = parseFloat(form.pos.value);
+      const bayaran = form.bayaran.value;
+      const nota = form.nota.value.trim();
+      const resit = form.resit.files[0];
+
+      let produkDipilih = [];
+      let subtotal = 0;
+
+      form.querySelectorAll("input[name='produk']:checked").forEach(el => {
+        const [namaProduk, harga] = el.value.split("|");
+        produkDipilih.push(namaProduk);
+        subtotal += parseFloat(harga);
       });
-      return selected;
-    }
 
-    function showShippingInputs() {
-      const shipping = document.querySelector('input[name="ship"]:checked').value;
-      document.getElementById("shipping-details").classList.toggle("hidden", shipping === "pickup");
-      document.getElementById("cod-cost-input").classList.toggle("hidden", shipping !== "cod");
-      document.getElementById("packaging-header").classList.toggle("hidden", shipping === "pickup");
-      document.getElementById("packaging-section").classList.toggle("hidden", shipping === "pickup");
-    }
+      const jumlah = subtotal + wrap + pos;
+      const orderID = "PS" + Date.now();
 
-    function generateSummary() {
-      const summaryDiv = document.getElementById("summary");
-      const selected = getSelectedProducts();
-      if (selected.length === 0) {
-        alert("Sila pilih sekurang-kurangnya satu produk.");
-        return false;
-      }
-
-      const shipping = document.querySelector('input[name="ship"]:checked').value;
-      const packaging = document.querySelector('input[name="pack"]:checked')?.value || "0";
-      const codCost = shipping === "cod" ? parseFloat(document.getElementById("codCost").value || "0") : 0;
-
-      const nama = document.getElementById("customerName")?.value.trim();
-      const alamat = document.getElementById("customerAddress")?.value.trim();
-      const telefon = document.getElementById("customerPhone")?.value.trim();
-
-      if (shipping !== "pickup" && (!nama || !alamat || !telefon)) {
-        alert("Sila lengkapkan maklumat penghantaran.");
-        return false;
-      }
-
-      let totalItem = 0, totalUpah = 0, totalLogistic = 0;
-
-      summaryDiv.innerHTML = "";
-
-      selected.forEach(prod => {
-        const line = document.createElement("div");
-        line.className = "summary-item";
-        line.textContent = `${prod.name} x${prod.qty} = RM${prod.subtotal.toFixed(2)}`;
-        summaryDiv.appendChild(line);
-        totalItem += prod.subtotal;
-        totalUpah += prod.totalUpah;
-        totalLogistic += prod.totalLogistic;
-      });
-
-      const packagingCost = parseFloat(packaging) || 0;
-      const totalPackaging = packagingCost;
-
-      const shippingCost = shipping === "pos" ? 10 : (shipping === "cod" ? codCost : 0);
-      const grandTotal = totalItem + totalUpah + totalLogistic + totalPackaging + shippingCost;
-
-      summaryDiv.innerHTML += `
-        <div class="summary-item">Jumlah Harga Item: RM${totalItem.toFixed(2)}</div>
-        <div class="summary-item">Jumlah Upah: RM${totalUpah.toFixed(2)}</div>
-        <div class="summary-item">Logistik: RM${totalLogistic.toFixed(2)}</div>
-        <div class="summary-item">Pembungkusan: RM${totalPackaging.toFixed(2)}</div>
-        <div class="summary-item">Penghantaran: RM${shippingCost.toFixed(2)}</div>
-        <hr />
-        <div class="summary-item"><strong>Total: RM${grandTotal.toFixed(2)}</strong></div>
+      const hasilDiv = document.getElementById("hasil");
+      hasilDiv.innerHTML = `
+        <h3 class="font-bold text-lg">Order Diterima 🎉</h3>
+        <p><strong>Order ID:</strong> ${orderID}</p>
+        <p><strong>Nama:</strong> ${nama}</p>
+        <p><strong>No Telefon:</strong> ${telefon}</p>
+        <p><strong>Alamat:</strong> ${alamat}</p>
+        <p><strong>Produk:</strong> ${produkDipilih.join(", ")}</p>
+        <p><strong>Subtotal:</strong> RM${subtotal.toFixed(2)}</p>
+        <p><strong>Wrap:</strong> RM${wrap.toFixed(2)}</p>
+        <p><strong>Pos:</strong> RM${pos.toFixed(2)}</p>
+        <p><strong>Jumlah Keseluruhan:</strong> <strong>RM${jumlah.toFixed(2)}</strong></p>
+        <p><strong>Kaedah Bayaran:</strong> ${bayaran}</p>
+        <p><strong>Nota:</strong> ${nota || "-"}</p>
+        <p class="mt-2">Sila WhatsApp bukti pembayaran dan Order ID ke <a href="https://wa.me/601170351789" class="text-blue-600 underline">011-7035 1789 (Solehuddin)</a></p>
       `;
+      hasilDiv.classList.remove("hidden");
 
-      // Isi ke hidden form
-      document.getElementById("field-items").value = selected.map(p => `${p.name} x${p.qty}`).join(", ");
-      document.getElementById("field-totalPrice").value = totalItem.toFixed(2);
-      document.getElementById("field-totalUpah").value = totalUpah.toFixed(2);
-      document.getElementById("field-totalPackaging").value = totalPackaging.toFixed(2);
-      document.getElementById("field-totalShip").value = shippingCost.toFixed(2);
-      document.getElementById("field-totalLogistic").value = totalLogistic.toFixed(2);
-      document.getElementById("field-grandTotal").value = grandTotal.toFixed(2);
-      document.getElementById("field-customerName").value = nama || "-";
-      document.getElementById("field-customerAddress").value = alamat || "-";
-      document.getElementById("field-customerPhone").value = telefon || "-";
-
-      return true;
-    }
-
-    // Event Listeners
-    document.querySelectorAll('input[name="ship"]').forEach(radio => {
-      radio.addEventListener("change", showShippingInputs);
-    });
-
-    document.getElementById("toReview").addEventListener("click", () => {
-      if (generateSummary()) {
-        document.getElementById("section-select").classList.add("hidden");
-        document.getElementById("section-review").classList.remove("hidden");
-        document.getElementById("orderIdDisplayReview").textContent = "AUTO-" + Date.now();
-      }
-    });
-
-    document.getElementById("backBtn").addEventListener("click", () => {
-      document.getElementById("section-review").classList.add("hidden");
-      document.getElementById("section-select").classList.remove("hidden");
-    });
-
-    document.getElementById("confirmBtn").addEventListener("click", () => {
-      alert("Pesanan anda sedang dihantar. Anda akan dibawa ke borang Google untuk muat naik resit.");
-      document.getElementById("hiddenForm").submit();
-    });
-
-    window.addEventListener("load", () => {
-      initProducts();
-      showShippingInputs();
+      form.reset();
     });
   </script>
 </body>
