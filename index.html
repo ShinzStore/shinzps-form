@@ -54,7 +54,7 @@
       <label>Nombor Telefon: <input type="tel" id="customerPhone" required></label>
       <!-- Alamat: akan di-switch mengikut pilihan penghantaran -->
       <div id="address-container">
-        <!-- Default: untuk Self Pickup, kita tunjuk dropdown -->
+        <!-- Default: dropdown untuk Self Pickup -->
         <label>Alamat Pengambilan:
           <select id="customerAddressSelect" required>
             <option value="">Pilih Lokasi</option>
@@ -69,7 +69,7 @@
       <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" value="0"></label>
     </div>
 
-    <!-- Pilihan pembungkusan untuk Pos/COD -->
+    <!-- Pilihan pembungkusan hanya untuk Pos -->
     <h3 id="packaging-header" class="hidden">Pilihan Pembungkusan</h3>
     <div id="packaging-section" class="hidden">
       <label><input type="radio" name="pack" value="3" checked> Basic (RM3/box)</label>
@@ -105,6 +105,7 @@
     <input type="hidden" name="customerAddress" id="field-customerAddress">
     <input type="hidden" name="customerPhone" id="field-customerPhone">
     <input type="hidden" name="shippingMethod" id="field-shippingMethod">
+    <!-- packaging hanya diisi bila Pos -->
     <input type="hidden" name="packaging" id="field-packaging">
     <!-- Jika perlu kolum tambah: tambah di sini -->
   </form>
@@ -112,7 +113,7 @@
   <script>
     console.log("Borang PS: script mulai dijalankan");
 
-    // Senarai produk sama seperti sebelum ini
+    // Senarai produk
     const products = [
       { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, logistic: 5,
         preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. Maksimum 8 box per perjalanan.", stock: true },
@@ -133,12 +134,11 @@
         console.error("products-container tidak ditemui!");
         return;
       }
-      container.innerHTML = ""; // kosongkan dahulu
+      container.innerHTML = "";
       products.forEach(prod => {
         const wrapper = document.createElement("div");
         wrapper.style.marginBottom = "10px";
 
-        // Checkbox untuk aktifkan kuantiti
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.value = prod.code;
@@ -146,7 +146,6 @@
         checkbox.disabled = !prod.stock;
         wrapper.appendChild(checkbox);
 
-        // Label nama & harga
         const label = document.createElement("label");
         label.htmlFor = checkbox.id;
         label.style.fontWeight = "bold";
@@ -157,7 +156,6 @@
         if (!prod.stock) {
           label.textContent += " - Habis Stok";
         } else {
-          // Info preorder icon
           if (prod.preorderInfo) {
             const infoIcon = document.createElement("span");
             infoIcon.className = "info-icon";
@@ -165,7 +163,7 @@
             infoIcon.onclick = () => alert(prod.preorderInfo);
             label.appendChild(infoIcon);
           }
-          // Butang kuantiti +/-
+          // Kuantiti +/-
           const qtyWrapper = document.createElement("span");
           qtyWrapper.className = "qty-control";
           qtyWrapper.style.marginLeft = "15px";
@@ -230,12 +228,11 @@
         el.addEventListener('change', () => {
           console.log("Pilihan penghantaran berubah:", el.value);
           const val = document.querySelector('input[name="ship"]:checked').value;
-          // Nama & Telefon sentiasa visible
-          // Alamat: switch antara select atau input
+          // Nama & Telefon sentiasa ada; hanya switch alamat
           const addressContainer = document.getElementById("address-container");
-          addressContainer.innerHTML = ""; // kosong dahulu
+          addressContainer.innerHTML = "";
           if (val === 'pickup') {
-            // Tunjuk dropdown dengan satu pilihan
+            // Dropdown lokasi
             const lbl = document.createElement("label");
             lbl.textContent = "Alamat Pengambilan:";
             const sel = document.createElement("select");
@@ -252,7 +249,7 @@
             lbl.appendChild(sel);
             addressContainer.appendChild(lbl);
           } else {
-            // Pos atau COD: input teks alamat bebas
+            // Pos atau COD: input teks alamat
             const lbl = document.createElement("label");
             lbl.textContent = "Alamat Penuh:";
             const inp = document.createElement("input");
@@ -264,6 +261,7 @@
           }
           // COD cost only for COD
           const codDetails = document.getElementById("cod-cost-input");
+          // Packaging only for Pos
           const packagingHeader = document.getElementById("packaging-header");
           const packagingSection = document.getElementById("packaging-section");
           if (val === 'pos') {
@@ -272,9 +270,11 @@
             packagingSection.classList.remove("hidden");
           } else if (val === 'cod') {
             codDetails.classList.remove("hidden");
-            packagingHeader.classList.remove("hidden");
-            packagingSection.classList.remove("hidden");
+            // sembunyikan packaging untuk COD
+            packagingHeader.classList.add("hidden");
+            packagingSection.classList.add("hidden");
           } else {
+            // pickup
             codDetails.classList.add("hidden");
             packagingHeader.classList.add("hidden");
             packagingSection.classList.add("hidden");
@@ -283,8 +283,7 @@
       });
 
       // Trigger initial supaya dropdown alamat muncul untuk default 'pickup'
-      const evt = new Event('change');
-      document.querySelector('input[name="ship"][value="pickup"]').dispatchEvent(evt);
+      document.querySelector('input[name="ship"][value="pickup"]').dispatchEvent(new Event('change'));
     }
 
     // Kumpul pilihan produk
@@ -314,7 +313,6 @@
           return;
         }
         document.getElementById("no-stock-message").classList.add("hidden");
-        // Semak shipping details: Nama, Phone, Alamat wajib ada
         const ship = document.querySelector('input[name="ship"]:checked');
         if (!ship) {
           alert("Sila pilih penghantaran.");
@@ -326,18 +324,15 @@
           alert("Sila isi Nama dan Nombor Telefon.");
           return;
         }
-        // Alamat: bergantung pada elemen yang ada di address-container
+        // Alamat bergantung select/input
         const addressContainer = document.getElementById("address-container");
         const selectAddr = addressContainer.querySelector("select#customerAddressSelect");
         const inputAddr = addressContainer.querySelector("input#customerAddress");
         let addressVal = "";
-        if (selectAddr) {
-          addressVal = selectAddr.value.trim();
-        } else if (inputAddr) {
-          addressVal = inputAddr.value.trim();
-        }
+        if (selectAddr) addressVal = selectAddr.value.trim();
+        else if (inputAddr) addressVal = inputAddr.value.trim();
         if (!addressVal) {
-          alert("Sila isi/ pilih Alamat.");
+          alert("Sila isi/pilih Alamat.");
           return;
         }
         // Papar ringkasan
@@ -365,7 +360,6 @@
         const totalUpah = parseFloat(summaryDiv.dataset.totalUpah) || 0;
         const totalPack = parseFloat(summaryDiv.dataset.totalPack) || 0;
         const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes) || 0;
-        // Compute shipping cost
         let totalShip = 0;
         const shipSel = document.querySelector('input[name="ship"]:checked').value;
         if (shipSel === 'pos') {
@@ -385,7 +379,7 @@
         document.getElementById("field-totalLogistic").value = totalLogistic;
         document.getElementById("field-grandTotal").value = grandTotal;
         document.getElementById("field-customerName").value = document.getElementById("customerName").value.trim();
-        // Dapatkan alamat dari select atau input
+        // Alamat dari select/input
         const addrContainer = document.getElementById("address-container");
         const selAddr = addrContainer.querySelector("select#customerAddressSelect");
         const inpAddr = addrContainer.querySelector("input#customerAddress");
@@ -395,18 +389,18 @@
         document.getElementById("field-customerAddress").value = addressVal;
         document.getElementById("field-customerPhone").value = document.getElementById("customerPhone").value.trim();
         document.getElementById("field-shippingMethod").value = shipSel;
-        // packaging
+        // packaging hanya jika Pos
         let packVal = "";
-        if (shipSel === 'pos' || shipSel === 'cod') {
+        if (shipSel === 'pos') {
           const packEl = document.querySelector('input[name="pack"]:checked');
           if (packEl) packVal = packEl.value;
         }
         document.getElementById("field-packaging").value = packVal;
 
-        // Submit hidden form → buka tab baru dengan balasan Apps Script
+        // Submit hidden form → buka tab baru
         document.getElementById("hiddenForm").submit();
 
-        // Optional: re-enable button selepas 5s
+        // Re-enable butang selepas beberapa saat
         setTimeout(() => {
           btn.disabled = false;
           btn.textContent = "Sahkan Order";
@@ -419,7 +413,7 @@
       console.log("showSummary dipanggil");
       const summaryDiv = document.getElementById("summary");
       summaryDiv.innerHTML = "";
-      let totalPrice = 0, totalUpah = 0, totalPackCost = 0;
+      let totalPrice = 0, totalUpah = 0, totalPackCostLocal = 0;
       let totalBoxes = 0;
       selected.forEach(item => {
         totalPrice += item.price * item.qty;
@@ -439,12 +433,12 @@
         className: "summary-item"
       }));
       const shipSel = document.querySelector('input[name="ship"]:checked').value;
-      let totalPackCostLocal = 0;
-      if (shipSel === 'pos' || shipSel === 'cod') {
+      let totalPackCost = 0;
+      if (shipSel === 'pos') {
         const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value) || 0;
-        totalPackCostLocal = packCostPer * totalBoxes;
+        totalPackCost = packCostPer * totalBoxes;
         summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Total Pembungkusan</strong>: RM${totalPackCostLocal.toFixed(2)} (RM${packCostPer}/box)`,
+          innerHTML: `<strong>Total Pembungkusan</strong>: RM${totalPackCost.toFixed(2)} (RM${packCostPer}/box)`,
           className: "summary-item"
         }));
       }
@@ -461,24 +455,27 @@
           className: "summary-item"
         }));
       } else {
+        // pickup
         summaryDiv.appendChild(Object.assign(document.createElement("p"), {
           innerHTML: `<strong>Self Pickup</strong>: Guar Utama Guar Chempedak`,
           className: "summary-item"
         }));
       }
       const totalLogistic = totalBoxes * 5;
-      const grandTotal = totalPrice + totalUpah + totalPackCostLocal + totalLogistic +
-                         (shipSel === 'pos' ? 10 * totalBoxes : (shipSel === 'cod' ? (parseFloat(document.getElementById("codCost").value)||0) : 0));
+      const grandTotal = totalPrice + totalUpah + totalPackCost + totalLogistic +
+                         (shipSel === 'pos' ? 10 * totalBoxes :
+                          shipSel === 'cod' ? (parseFloat(document.getElementById("codCost").value)||0) : 0);
       summaryDiv.appendChild(Object.assign(document.createElement("p"), {
         innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`,
         className:"summary-item"
       }));
-      // Simpan data dalam dataset untuk submit
+      // Simpan data untuk submit
       summaryDiv.dataset.totalPrice = totalPrice;
       summaryDiv.dataset.totalUpah = totalUpah;
-      summaryDiv.dataset.totalPack = totalPackCostLocal;
+      summaryDiv.dataset.totalPack = totalPackCost;
       summaryDiv.dataset.totalBoxes = totalBoxes;
-      summaryDiv.dataset.totalShip = (shipSel === 'pos' ? 10 * totalBoxes : (shipSel === 'cod' ? (parseFloat(document.getElementById("codCost").value)||0) : 0));
+      summaryDiv.dataset.totalShip = (shipSel === 'pos' ? 10 * totalBoxes :
+                                     shipSel === 'cod' ? (parseFloat(document.getElementById("codCost").value)||0) : 0);
     }
   </script>
 </body>
