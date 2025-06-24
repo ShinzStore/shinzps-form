@@ -21,7 +21,13 @@
     .info-icon { display: inline-block; width: 16px; height: 16px; border: 1px solid #333; border-radius: 50%; 
                  text-align: center; line-height: 14px; font-size: 12px; cursor: pointer; margin-left: 4px; }
     .hidden { display: none; }
-    input[type="text"], input[type="tel"], input[type="number"], select { width: 100%; padding: 6px; margin: 4px 0; box-sizing: border-box; }
+    input[type="text"], input[type="tel"], input[type="number"], select, a.share-btn {
+      width: 100%; padding: 6px; margin: 4px 0; box-sizing: border-box;
+    }
+    a.share-btn {
+      display: inline-block; text-align: center; text-decoration: none; background: #25D366; color: white; 
+      border-radius: 4px; padding: 8px; margin-top: 8px;
+    }
     button.qty-btn { font-size: 16px; }
   </style>
 </head>
@@ -48,7 +54,7 @@
     <label><input type="radio" name="ship" value="cod"> COD (Caj ikut jarak)</label>
     <label><input type="radio" name="ship" value="pickup" checked> Self Pickup (RM0)</label>
 
-    <!-- Shipping details: Nama, Telefon sentiasa diperlukan -->
+    <!-- Shipping details: Nama & Telefon sentiasa diperlukan -->
     <div id="shipping-details">
       <label>Nama: <input type="text" id="customerName" required></label>
       <label>Nombor Telefon: <input type="tel" id="customerPhone" required></label>
@@ -67,6 +73,16 @@
     <!-- COD cost input, hanya untuk COD -->
     <div id="cod-cost-input" class="hidden">
       <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" value="0"></label>
+    </div>
+
+    <!-- Butang Kongsi Lokasi via WhatsApp untuk COD -->
+    <div id="share-location" class="hidden">
+      <!-- Pautan ini: buka WhatsApp dengan mesej pra-tulis.
+           Pelanggan boleh tambahkan Order ID atau nota sebelum hantar lokasi. -->
+      <a href="https://wa.me/601170351789?text=Hai%2C%20saya%20ingin%20kongsi%20lokasi%20untuk%20COD%20pesanan." 
+         target="_blank" class="share-btn">
+        📍 Klik untuk Kongsi Lokasi di WhatsApp
+      </a>
     </div>
 
     <!-- Pilihan pembungkusan hanya untuk Pos -->
@@ -261,21 +277,26 @@
           }
           // COD cost only for COD
           const codDetails = document.getElementById("cod-cost-input");
+          // Butang share lokasi
+          const shareLocDiv = document.getElementById("share-location");
           // Packaging only for Pos
           const packagingHeader = document.getElementById("packaging-header");
           const packagingSection = document.getElementById("packaging-section");
           if (val === 'pos') {
             codDetails.classList.add("hidden");
+            shareLocDiv.classList.add("hidden");
             packagingHeader.classList.remove("hidden");
             packagingSection.classList.remove("hidden");
           } else if (val === 'cod') {
             codDetails.classList.remove("hidden");
-            // sembunyikan packaging untuk COD
+            shareLocDiv.classList.remove("hidden");
+            // packaging sembunyi untuk COD
             packagingHeader.classList.add("hidden");
             packagingSection.classList.add("hidden");
           } else {
             // pickup
             codDetails.classList.add("hidden");
+            shareLocDiv.classList.add("hidden");
             packagingHeader.classList.add("hidden");
             packagingSection.classList.add("hidden");
           }
@@ -389,7 +410,7 @@
         document.getElementById("field-customerAddress").value = addressVal;
         document.getElementById("field-customerPhone").value = document.getElementById("customerPhone").value.trim();
         document.getElementById("field-shippingMethod").value = shipSel;
-        // packaging hanya jika Pos
+        // Packaging hanya jika Pos
         let packVal = "";
         if (shipSel === 'pos') {
           const packEl = document.querySelector('input[name="pack"]:checked');
@@ -454,6 +475,17 @@
           innerHTML: `<strong>Penghantaran COD</strong>: RM${codCost.toFixed(2)}`,
           className: "summary-item"
         }));
+        // Sertakan butang kongsi lokasi di ringkasan
+        const shareLocDiv = document.getElementById("share-location");
+        if (shareLocDiv) {
+          // Jika belum dipaparkan, boleh letak nota di ringkasan:
+          const note = document.createElement("p");
+          note.className = "summary-item";
+          note.innerHTML = `Sila kongsi lokasi melalui WhatsApp sebelum/selepas hantar pesanan:`;
+          summaryDiv.appendChild(note);
+          summaryDiv.appendChild(shareLocDiv.cloneNode(true)); 
+          // cloneNode supaya ringkasan ada butang juga
+        }
       } else {
         // pickup
         summaryDiv.appendChild(Object.assign(document.createElement("p"), {
