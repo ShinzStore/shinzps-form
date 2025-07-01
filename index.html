@@ -6,7 +6,7 @@
   <title>ShinZ Personal Shopper</title>
   <style>
     body { font-family: sans-serif; padding:20px; max-width:600px; margin:auto; background:#f8f9fa; }
-    h2, h3 { text-align:center; }
+    h2,h3 { text-align:center; }
     .section { background:#fff; padding:15px; margin-bottom:20px; border-radius:8px; }
     label { display:block; margin:8px 0; }
     .qty-control { display:inline-flex; align-items:center; margin-left:10px; }
@@ -17,33 +17,33 @@
     .btn-primary { background:#007bff; color:#fff; }
     .btn-secondary { background:#6c757d; color:#fff; }
     .hidden { display:none; }
-    #statusInit, #statusUpload { margin-top:10px; font-weight:bold; }
-    pre { background:#f0f0f0; padding:10px; border-radius:4px; white-space:pre-wrap; }
+    pre { white-space: pre-wrap; word-wrap: break-word; }
+    #statusInit, #status { margin-top:10px; font-weight:bold; }
   </style>
 </head>
 <body>
+
   <h2>ShinZ Personal Shopper</h2>
 
-  <!-- STEP 1: FORM ORDER -->
+  <!-- STEP 1: ORDER FORM -->
   <div id="step1" class="section">
     <h3>Pilih Produk & Penghantaran</h3>
     <div id="products"></div>
 
     <div><strong>Penghantaran:</strong></div>
     <label><input type="radio" name="ship" value="pos"> Pos (RM10/box)</label>
-    <label><input type="radio" name="ship" value="cod"> COD</label>
-    <label><input type="radio" name="ship" value="pickup" checked> Self Pickup</label>
+    <label><input type="radio" name="ship" value="cod"> COD (Caj ikut jarak)</label>
+    <label><input type="radio" name="ship" value="pickup" checked> Self Pickup (RM0)</label>
 
-    <!-- Pembungkusan untuk Pos -->
+    <!-- Packaging for Pos -->
     <div id="packContainer" class="hidden">
       <strong>Pilihan Pembungkusan:</strong>
-      <label><input type="radio" name="pack" value="0" checked> Tanpa Balut (RM0)</label>
-      <label><input type="radio" name="pack" value="3"> Basic (RM3/box)</label>
+      <label><input type="radio" name="pack" value="3" checked> Basic (RM3/box)</label>
       <label><input type="radio" name="pack" value="6"> Standard (RM6/box)</label>
     </div>
 
-    <label>Nama: <input type="text" id="name" placeholder="Nama Penuh"></label>
-    <label>Telefon: <input type="tel" id="phone" placeholder="012-3456789"></label>
+    <label>Nama: <input type="text" id="name"></label>
+    <label>Telefon: <input type="tel" id="phone"></label>
     <div id="addrContainer"></div>
 
     <button id="btnInit" class="btn-primary">Sahkan & Teruskan Bayaran</button>
@@ -55,15 +55,11 @@
     <h3>Ringkasan & Upload Bukti</h3>
     <pre id="summary"></pre>
     <p><strong>Arahan Pembayaran:</strong></p>
-    <pre id="instructions">
-Sila lakukan pembayaran ke:
-• CIMB 1234567890 (Solehuddin)
-• atau DuitNow 01170351789
-    </pre>
+    <pre id="instructions"></pre>
 
     <input type="file" id="proof" accept="image/*,application/pdf" />
     <button id="btnUpload" class="btn-primary">Upload Bukti</button>
-    <p id="statusUpload"></p>
+    <p id="status"></p>
   </div>
 
   <!-- STEP 3: FINAL -->
@@ -76,223 +72,234 @@ Sila lakukan pembayaran ke:
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8_8DjKJVqHqYZcqAJ68PgnUO1z_dniOrKeqfumKlbcQHBBvJQy8SOeDA4EItl-C976w/exec';
 
-// Produk
 const products = [
-  { name:"Iris Ejen Ali", code:"IEA", price:70, upah:25, log:5, stock:true },
-  { name:"Iris Ejen Alicia", code:"IEI", price:70, upah:25, log:5, stock:true },
-  { name:"Kad ID Ejen Ali", code:"IDEA", price:11.5, upah:15, log:5, stock:false },
-  { name:"Kad ID Ejen Alicia", code:"IDEI", price:11.5, upah:15, log:5, stock:false },
-  { name:"Kad ID Ejen Satria", code:"IDES", price:19, upah:15, log:5, stock:false },
-  { name:"Kad Kecemasan Keluangman", code:"IDKM", price:11.5, upah:15, log:5, stock:false }
+  {name:"Iris Ejen Ali",code:"IEA",price:70,upah:25,log:5,stock:true, preorderInfo:"Pengambil Iris bermula 15/7/2025..."},
+  {name:"Iris Ejen Alicia",code:"IEI",price:70,upah:25,log:5,stock:true, preorderInfo:"Pengambil Iris bermula 15/7/2025..."},
+  {name:"Kad ID Ejen Ali",code:"IDEA",price:11.5,upah:15,log:5,stock:false},
+  {name:"Kad ID Ejen Alicia",code:"IDEI",price:11.5,upah:15,log:5,stock:false},
+  {name:"Kad ID Ejen Satria",code:"IDES",price:19,upah:15,log:5,stock:false},
+  {name:"Kad Kecemasan Keluangman",code:"IDKM",price:11.5,upah:15,log:5,stock:false}
 ];
 
-// Render produk
+// render products
 function renderProducts() {
-  const container = document.getElementById('products');
+  const c = document.getElementById('products');
   products.forEach(p => {
-    const row = document.createElement('div');
-    const chk = document.createElement('input');
-    chk.type = 'checkbox'; chk.id = p.code; chk.disabled = !p.stock;
-    const lbl = document.createElement('label');
-    lbl.htmlFor = p.code;
-    lbl.textContent = `${p.name} (RM${p.price})`;
-    row.append(chk, lbl);
-    if(p.stock) {
-      // qty
-      const qtyCtl = document.createElement('span');
-      qtyCtl.className = 'qty-control';
+    const d = document.createElement('div');
+    const chk = document.createElement('input'); chk.type='checkbox'; chk.id=p.code; chk.disabled=!p.stock;
+    const lab = document.createElement('label'); lab.htmlFor=p.code; lab.textContent=`${p.name} (RM${p.price})`;
+    d.append(chk, lab);
+    if (p.stock) {
+      if (p.preorderInfo) {
+        const info = document.createElement('span'); info.className='info-icon'; info.textContent='i';
+        info.onclick = ()=>alert(p.preorderInfo);
+        lab.appendChild(info);
+      }
+      const wrapper = document.createElement('span'); wrapper.className='qty-control';
       const dec = document.createElement('button'); dec.textContent='-';
-      const num = document.createElement('span'); num.id='q-'+p.code; num.textContent='0';
+      const num = document.createElement('span'); num.id='q-'+p.code; num.textContent='0'; num.style.margin='0 5px';
       const inc = document.createElement('button'); inc.textContent='+';
-      inc.onclick = () => { let v=+num.textContent; if(v<10){ num.textContent=v+1; chk.checked=true;}};
-      dec.onclick = () => { let v=+num.textContent; if(v>0){ num.textContent=v-1; if(v-1===0) chk.checked=false;}};
-      qtyCtl.append(dec,num,inc);
-      row.append(qtyCtl);
-      // upah & logistik info
-      const upInfo = document.createElement('div'); upInfo.style.fontSize='0.9em';
-      upInfo.textContent = `Upah: RM${p.upah}/box `;
-      const i1 = document.createElement('span'); i1.className='info-icon'; i1.textContent='i';
-      i1.onclick = ()=>alert('Upah ambil kira masa dan perjalanan ~8-10 jam.');
-      upInfo.appendChild(i1);
-      row.appendChild(upInfo);
-      const logInfo = document.createElement('div'); logInfo.style.fontSize='0.9em';
-      logInfo.textContent = `Logistik: RM${p.log}/box `;
-      const i2 = document.createElement('span'); i2.className='info-icon'; i2.textContent='i';
-      i2.onclick = ()=>alert('Kos perjalanan & angkut barang.');
-      logInfo.appendChild(i2);
-      row.appendChild(logInfo);
+      inc.onclick = ()=>{let v=+num.textContent; if(v<10){ num.textContent=v+1; chk.checked=true;}};
+      dec.onclick = ()=>{let v=+num.textContent; if(v>0){ num.textContent=v-1; if(v-1===0) chk.checked=false;}};
+      wrapper.append(dec,num,inc);
+      d.append(wrapper);
+      // upah & logistik
+      const up = document.createElement('div'); up.style.fontSize='0.9em';
+      up.textContent=`Kos Upah: RM${p.upah}/box `;
+      const ui = document.createElement('span'); ui.className='info-icon'; ui.textContent='i';
+      ui.onclick = ()=>alert('Upah berdasarkan masa & perjalanan ~8-10 jam.');
+      up.appendChild(ui); d.appendChild(up);
+      const lg = document.createElement('div'); lg.style.fontSize='0.9em';
+      lg.textContent=`Kos Logistik: RM${p.log}/box `;
+      const li = document.createElement('span'); li.className='info-icon'; li.textContent='i';
+      li.onclick = ()=>alert('Kos perjalanan & angkut barang.');
+      lg.appendChild(li); d.appendChild(lg);
+    } else {
+      lab.textContent += ' – Habis Stok';
     }
-    container.appendChild(row);
+    c.append(d);
   });
 }
 
-// Address & packaging UI
-function updateUI() {
-  const ship = document.querySelector('input[name=ship]:checked').value;
+// update address & packaging UI
+function updateAddress() {
+  const val = document.querySelector('input[name="ship"]:checked').value;
   const addr = document.getElementById('addrContainer');
   const pack = document.getElementById('packContainer');
-  addr.innerHTML=''; pack.classList.add('hidden');
+  addr.innerHTML='';
 
-  if(ship==='pickup') {
-    addr.innerHTML = `<label>Lokasi Pickup:
+  if (val==='pickup') {
+    addr.innerHTML=`<label>Lokasi Pickup:
       <select id="address"><option value="">Pilih</option>
       <option>Guar Utama Guar Chempedak</option></select></label>`;
+    pack.classList.add('hidden');
   } else {
-    addr.innerHTML = `<label>Alamat Penuh:<input type="text" id="address"></label>`;
-    if(ship==='cod') {
-      addr.innerHTML += `<label>Caj COD (RM):<input type="number" id="codCost" min="0" value="0"></label>`;
-    } else {
+    addr.innerHTML=`<label>Alamat Penuh:<input type="text" id="address"></label>`;
+    if (val==='cod') {
+      addr.innerHTML+=`<label>Caj COD (RM):<input type="number" id="codCost" value="0" min="0"></label>`;
+      pack.classList.add('hidden');
+    } else if (val==='pos') {
       pack.classList.remove('hidden');
     }
   }
 }
 
-// Kumpul pilihan
+// gather selections
 function gather() {
-  const sel = [];
-  products.forEach(p => {
-    const num = document.getElementById('q-'+p.code);
-    if(num && +num.textContent>0) sel.push({ code:p.code, name:p.name, qty:+num.textContent, price:p.price, up:p.upah, log:p.log });
-  });
-  return sel;
+  return products.reduce((arr,p)=>{
+    const qtyEl = document.getElementById('q-'+p.code);
+    if (qtyEl && +qtyEl.textContent>0) arr.push({...p,qty:+qtyEl.textContent});
+    return arr;
+  },[]);
 }
 
-// Papar ringkasan
-function showSummary(items) {
-  const div = document.getElementById('summary');
-  div.innerHTML='';
-  let tp=0, tu=0, tt=0, tb=0;
-  items.forEach(it => {
-    tp += it.price*it.qty;
-    tu += it.up*it.qty;
-    tb += it.log*it.qty;
-    const el = document.createElement('p');
-    el.textContent = `${it.name} x${it.qty}: RM${(it.price*it.qty).toFixed(2)}`;
-    div.appendChild(el);
+// show summary
+function showSummary(sel) {
+  const d = document.getElementById('summary'); d.innerHTML='';
+  let tp=0, tu=0, tlog=0, tpack=0, tship=0, tb=0;
+  sel.forEach(i=>{
+    tp+=i.price*i.qty; tu+=i.upah*i.qty; tlog+=i.log*i.qty; tb+=i.qty;
+    const p = document.createElement('p'); p.className='summary-item';
+    p.textContent = `${i.name} x${i.qty}: RM${i.price}×${i.qty} = RM${(i.price*i.qty).toFixed(2)}`;
+    d.appendChild(p);
   });
-  // total upah/logistik
-  const upP = document.createElement('p');
-  upP.innerHTML = `<strong>Total Upah:</strong> RM${tu.toFixed(2)}`;
-  div.appendChild(upP);
-  const logP = document.createElement('p');
-  logP.innerHTML = `<strong>Total Logistik:</strong> RM${tb.toFixed(2)}`;
-  div.appendChild(logP);
-  // packaging & shipping
-  const ship = document.querySelector('input[name=ship]:checked').value;
-  let packCost=0, shipCost=0;
-  if(ship==='pos') {
-    const pk = +document.querySelector('input[name=pack]:checked').value;
-    packCost = pk * items.length;
-    shipCost = 10 * items.length;
-    div.appendChild(Object.assign(document.createElement('p'),{innerHTML:`<strong>Pembungkusan:</strong> RM${packCost.toFixed(2)}`}));
-    div.appendChild(Object.assign(document.createElement('p'),{innerHTML:`<strong>Pos:</strong> RM${shipCost.toFixed(2)}`}));
-  } else if(ship==='cod') {
-    shipCost = +document.getElementById('codCost').value||0;
-    div.appendChild(Object.assign(document.createElement('p'),{innerHTML:`<strong>COD:</strong> RM${shipCost.toFixed(2)}`}));
-  } else {
-    div.appendChild(Object.assign(document.createElement('p'),{innerHTML:`<strong>Self Pickup:</strong> RM0`}));
+  const ship = document.querySelector('input[name="ship"]:checked').value;
+  if (ship==='pos') {
+    const val = +document.querySelector('input[name="pack"]:checked').value;
+    tpack = val*tb;
+    tship = 10*tb;
+  } else if (ship==='cod') {
+    tship = +document.getElementById('codCost').value||0;
   }
-  const grand = tp+tu+tb+packCost+shipCost;
-  div.appendChild(Object.assign(document.createElement('p'),{innerHTML:`<strong>Jumlah Keseluruhan:</strong> RM${grand.toFixed(2)}`}));
-  return { tp, tu, tb, packCost, shipCost, grand };
-}
+  // totals
+  const lines = [
+    `<strong>Total Upah</strong>: RM${tu.toFixed(2)}`,
+    `<strong>Total Logistik</strong>: RM${tlog.toFixed(2)}`
+  ];
+  if(tpack) lines.push(`<strong>Total Pembungkusan</strong>: RM${tpack.toFixed(2)}`);
+  if(ship==='pos') lines.push(`<strong>Pos</strong>: RM10×${tb} = RM${tship.toFixed(2)}`);
+  if(ship==='cod') lines.push(`<strong>COD</strong>: RM${tship.toFixed(2)}`);
+  if(ship==='pickup') lines.push(`<strong>Self Pickup</strong>: RM0`);
+  lines.forEach(txt=>{
+    const e=document.createElement('p'); e.className='summary-item'; e.innerHTML=txt; d.appendChild(e);
+  });
+  const grand = tp+tu+tlog+tpack+tship;
+  const g = document.createElement('p'); g.className='summary-item';
+  g.innerHTML=`<strong>Jumlah Keseluruhan</strong>: RM${grand.toFixed(2)}`; d.appendChild(g);
 
-// Inisiasi
-renderProducts();
-document.querySelectorAll('input[name=ship]').forEach(i=>i.onchange=updateUI);
-updateUI();
-
-// STEP1 → init
-document.getElementById('btnInit').onclick = async ()=>{
-  const stat = document.getElementById('statusInit');
-  stat.textContent='Memproses…';
-  const items = gather();
-  if(!items.length){ stat.textContent='Pilih produk dahulu.'; return; }
-  const name = document.getElementById('name').value.trim();
-  const phone= document.getElementById('phone').value.trim();
-  const addr = document.getElementById('address').value.trim();
-  const ship= document.querySelector('input[name=ship]:checked').value;
-  if(!name||!phone||!addr){ stat.textContent='Isi nama, telefon & alamat.'; return; }
-
-  const sums = showSummary(items);
+  // instructions
   document.getElementById('instructions').textContent = 
-    "Sila bayar RM" + sums.grand.toFixed(2) + " ke CIMB 1234567890 atau DuitNow 01170351789";
+    'Sila buat bayaran ke CIMB 1234567890 (Solehuddin)\n' +
+    'atau DuitNow 01170351789\n\n' +
+    'Selepas bayar, upload bukti di bawah';
 
-  try {
-    const res=await fetch(SCRIPT_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({
-        action:'init',
-        items: items.map(i=>`${i.code} x${i.qty}`).join('; '),
-        totalPrice: sums.tp,
-        totalUpah: sums.tu,
-        totalPackaging: sums.packCost,
-        totalShip: sums.shipCost,
-        totalLogistic: sums.tb,
-        grandTotal: sums.grand,
-        customerName: name,
-        customerPhone: phone,
-        customerAddress: addr,
-        shippingMethod: ship,
-        packaging: ship==='pos'? +document.querySelector('input[name=pack]:checked').value : 0
-      })
-    });
-    const data=await res.json();
-    if(data.error) throw new Error(data.error);
+  // return totals + items
+  return { tp, tu, tlog, tpack, tship, grand, items: sel.map(i=>`${i.code} x${i.qty}`).join('; ') };
+}
 
-    // show step2
-    document.getElementById('step1').classList.add('hidden');
-    document.getElementById('step2').classList.remove('hidden');
-    window.currentTempId = data.tempId;
-  } catch(e) {
-    stat.textContent = 'Ralat: '+e.message;
-  }
-};
+document.addEventListener('DOMContentLoaded', ()=>{
+  renderProducts();
+  document.querySelectorAll('input[name="ship"]').forEach(i=>i.onchange=updateAddress);
+  updateAddress();
 
-// STEP2 → upload
-document.getElementById('btnUpload').onclick = ()=>{
-  const file = document.getElementById('proof').files[0];
-  const stat = document.getElementById('statusUpload');
-  if(!file){ stat.textContent='Pilih bukti dahulu.'; return; }
-  document.getElementById('btnUpload').disabled = true;
-  stat.textContent='Muat naik…';
+  // Step 1 → init
+  document.getElementById('btnInit').onclick = async ()=>{
+    const status = document.getElementById('statusInit');
+    status.textContent='Memproses…';
+    const sel = gather();
+    if(!sel.length){ status.textContent='Pilih produk.'; return; }
 
-  const doUpload = blob=>{
-    const form = new FormData();
-    form.append('action','upload');
-    form.append('tempId', window.currentTempId);
-    form.append('file', blob, blob.name||file.name);
-    fetch(SCRIPT_URL, { method:'POST', body: form })
-      .then(r=>r.json()).then(d=>{
-        if(d.error) throw new Error(d.error);
-        document.getElementById('step2').classList.add('hidden');
-        document.getElementById('step3').classList.remove('hidden');
-        document.getElementById('finalId').textContent = d.orderId;
-        document.getElementById('waLink').href = d.waLink;
-      }).catch(err=>{
-        stat.textContent='Gagal: '+err.message;
-        document.getElementById('btnUpload').disabled=false;
+    const name = document.getElementById('name').value.trim();
+    const phone= document.getElementById('phone').value.trim();
+    const addr = document.getElementById('address').value || 
+                 document.getElementById('address')?.value ||
+                 document.getElementById('address-container').querySelector('select')?.value;
+    if(!name||!phone||!addr){ status.textContent='Isi nama, telefon & alamat.'; return; }
+
+    const ship = document.querySelector('input[name="ship"]:checked').value;
+    const data = showSummary(sel);
+    // prepare payload
+    const payload = {
+      action:'init',
+      items: data.items,
+      totalPrice: data.tp,
+      totalUpah: data.tu,
+      totalPackaging: data.tpack,
+      totalShip: data.tship,
+      totalLogistic: data.tlog,
+      grandTotal: data.grand,
+      customerName: name,
+      customerPhone: phone,
+      customerAddress: addr,
+      shippingMethod: ship,
+      packaging: ship==='pos'? (+document.querySelector('input[name="pack"]:checked').value):0
+    };
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
       });
+      const d = await res.json();
+      if(d.error) throw new Error(d.error);
+      document.getElementById('step1').classList.add('hidden');
+      document.getElementById('step2').classList.remove('hidden');
+      window.currentTempId = d.tempId;
+    } catch(err){
+      console.error(err);
+      status.textContent = 'Ralat: '+err.message;
+    }
   };
 
-  if(file.type.startsWith('image/')) {
-    const reader = new FileReader();
-    reader.onload = e=>{
-      const img=new Image();
-      img.onload = ()=>{
-        const scale=Math.min(1,800/img.width), cw=img.width*scale, ch=img.height*scale;
-        const c=document.createElement('canvas'); c.width=cw; c.height=ch;
-        c.getContext('2d').drawImage(img,0,0,cw,ch);
-        c.toBlob(b=>{ b.name=file.name; doUpload(b); }, 'image/jpeg', 0.6);
-      };
-      img.src=e.target.result;
+  // Step 2 → upload
+  document.getElementById('btnUpload').onclick = ()=> {
+    const file = document.getElementById('proof').files[0];
+    const status = document.getElementById('status');
+    if(!file){ status.textContent='Pilih fail dulu.'; return; }
+    document.getElementById('btnUpload').disabled = true;
+    status.textContent = 'Muat naik…';
+
+    const onError = e=>{
+      status.textContent='Gagal: '+e;
+      document.getElementById('btnUpload').disabled=false;
     };
-    reader.readAsDataURL(file);
-  } else {
-    doUpload(file);
-  }
-};
+
+    const doUpload = blob => {
+      const form = new FormData();
+      form.append('action','upload');
+      form.append('tempId', window.currentTempId);
+      form.append('file', blob, blob.name||file.name);
+      fetch(SCRIPT_URL, { method:'POST', body: form })
+        .then(r=>r.json()).then(d=>{
+          if(d.error) throw new Error(d.error);
+          document.getElementById('step2').classList.add('hidden');
+          document.getElementById('step3').classList.remove('hidden');
+          document.getElementById('finalId').textContent = d.orderId;
+          document.getElementById('waLink').href = d.waLink;
+        })
+        .catch(e=>onError(e.message));
+    };
+
+    if(file.type.startsWith('image/')){
+      const reader = new FileReader();
+      reader.onload = e=>{
+        const img=new Image();
+        img.onload = ()=>{
+          const scale = Math.min(1,800/img.width), cw=img.width*scale, ch=img.height*scale;
+          const c=document.createElement('canvas'); c.width=cw; c.height=ch;
+          c.getContext('2d').drawImage(img,0,0,cw,ch);
+          c.toBlob(b=>{ b.name=file.name; doUpload(b); },'image/jpeg',0.6);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      doUpload(file);
+    }
+  };
+});
 </script>
+
 </body>
 </html>
