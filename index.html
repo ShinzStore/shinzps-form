@@ -8,33 +8,42 @@
     body { font-family: sans-serif; padding:20px; max-width:600px; margin:auto; background:#f8f9fa; }
     h2,h3 { text-align:center; }
     .section { background:#fff; padding:15px; margin-bottom:20px; border-radius:8px; }
-    label{display:block;margin:8px 0;}
-    .qty-control{display:inline-flex;align-items:center;margin-left:10px;}
-    .qty-control button{width:28px;height:28px;}
-    .info-icon{display:inline-block;width:16px;height:16px;border:1px solid #333;border-radius:50%;text-align:center;line-height:14px;font-size:12px;cursor:pointer;margin-left:4px;}
-    button, input[type="text"], input[type="tel"], input[type="number"], select{width:100%;padding:8px;margin:4px 0;box-sizing:border-box;}
-    button{border:none;border-radius:4px;cursor:pointer;}
-    .btn-primary{background:#007bff;color:#fff;}
-    .btn-secondary{background:#6c757d;color:#fff;}
-    .hidden{display:none;}
-    #status{margin-top:10px;font-weight:bold;}
+    label { display:block; margin:8px 0; }
+    .qty-control { display:inline-flex; align-items:center; margin-left:10px; }
+    .qty-control button { width:28px; height:28px; }
+    .info-icon { display:inline-block; width:16px; height:16px; border:1px solid #333; border-radius:50%; text-align:center; line-height:14px; font-size:12px; cursor:pointer; margin-left:4px; }
+    button, input[type="text"], input[type="tel"], input[type="number"], select { width:100%; padding:8px; margin:4px 0; box-sizing:border-box; }
+    button { border:none; border-radius:4px; cursor:pointer; }
+    .btn-primary { background:#007bff; color:#fff; }
+    .btn-secondary { background:#6c757d; color:#fff; }
+    .hidden { display:none; }
+    #statusInit, #status { margin-top:10px; font-weight:bold; }
   </style>
 </head>
 <body>
-
   <h2>ShinZ Personal Shopper</h2>
 
   <!-- STEP 1: FORM ORDER -->
   <div id="step1" class="section">
     <h3>Pilih Produk & Penghantaran</h3>
     <div id="products"></div>
+
     <div><strong>Penghantaran:</strong></div>
     <label><input type="radio" name="ship" value="pos"> Pos (RM10/box)</label>
     <label><input type="radio" name="ship" value="cod"> COD</label>
     <label><input type="radio" name="ship" value="pickup" checked> Self Pickup</label>
+
+    <!-- Pilihan pembungkusan untuk Pos -->
+    <div id="packContainer" class="hidden">
+      <strong>Pilihan Pembungkusan:</strong>
+      <label><input type="radio" name="pack" value="0" checked> Tanpa Balut Tambahan (RM0)</label>
+      <label><input type="radio" name="pack" value="3"> Wrap Tebal (RM3/box)</label>
+    </div>
+
     <label>Nama: <input type="text" id="name"></label>
     <label>Telefon: <input type="tel" id="phone"></label>
     <div id="addrContainer"></div>
+
     <button id="btnInit" class="btn-primary">Sahkan & Teruskan Bayaran</button>
     <p id="statusInit"></p>
   </div>
@@ -45,6 +54,7 @@
     <pre id="summary"></pre>
     <p><strong>Arahan Pembayaran:</strong></p>
     <pre id="instructions"></pre>
+
     <input type="file" id="proof" accept="image/*,application/pdf" />
     <button id="btnUpload" class="btn-primary">Upload Bukti</button>
     <p id="status"></p>
@@ -59,6 +69,7 @@
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8_8DjKJVqHqYZcqAJ68PgnUO1z_dniOrKeqfumKlbcQHBBvJQy8SOeDA4EItl-C976w/exec';
+
 const products = [
   {name:"Iris Ejen Ali",code:"IEA",price:70,upah:25,log:5,stock:true},
   {name:"Iris Ejen Alicia",code:"IEI",price:70,upah:25,log:5,stock:true},
@@ -68,150 +79,182 @@ const products = [
   {name:"Kad Kecemasan Keluangman",code:"IDKM",price:11.5,upah:15,log:5,stock:false}
 ];
 
-// render products list
-function renderProducts(){
+// Render produk
+function renderProducts() {
   const c = document.getElementById('products');
-  products.forEach(p=>{
-    const d=document.createElement('div');
-    const chk=document.createElement('input'); chk.type='checkbox'; chk.id=p.code; chk.disabled=!p.stock;
-    const lab=document.createElement('label'); lab.htmlFor=p.code; lab.textContent=`${p.name} (RM${p.price})`;
-    d.append(chk,lab);
-    if(p.stock){
-      // qty controls
-      const wrapper=document.createElement('span'); wrapper.className='qty-control';
-      const dec=document.createElement('button'); dec.textContent='-';
-      const num=document.createElement('span'); num.id='q-'+p.code; num.textContent='0';
-      const inc=document.createElement('button'); inc.textContent='+';
-      inc.onclick=_=>{let v=+num.textContent; if(v<10){num.textContent=v+1; chk.checked=true;}};
-      dec.onclick=_=>{let v=+num.textContent; if(v>0){num.textContent=v-1; if(v-1===0) chk.checked=false;}};
-      wrapper.append(dec,num,inc);
+  products.forEach(p => {
+    const d = document.createElement('div');
+    const chk = document.createElement('input'); chk.type='checkbox'; chk.id=p.code; chk.disabled=!p.stock;
+    const lab = document.createElement('label'); lab.htmlFor=p.code; lab.textContent=`${p.name} (RM${p.price})`;
+    d.append(chk, lab);
+    if (p.stock) {
+      const wrapper = document.createElement('span'); wrapper.className='qty-control';
+      const dec = document.createElement('button'); dec.textContent='-';
+      const num = document.createElement('span'); num.id='q-'+p.code; num.textContent='0';
+      const inc = document.createElement('button'); inc.textContent='+';
+      inc.onclick = () => { let v=+num.textContent; if(v<10){ num.textContent=v+1; chk.checked=true; } };
+      dec.onclick = () => { let v=+num.textContent; if(v>0){ num.textContent=v-1; if(v-1===0) chk.checked=false; } };
+      wrapper.append(dec, num, inc);
       d.append(wrapper);
-    } else lab.textContent+=' – Habis Stok';
+    } else {
+      lab.textContent += ' – Habis Stok';
+    }
     c.append(d);
   });
 }
-// dynamic address field
-function updateAddress(){
-  const val=document.querySelector('input[name=ship]:checked').value,
-        cont=document.getElementById('addrContainer');
-  cont.innerHTML='';
-  if(val==='pickup'){
-    cont.innerHTML=`<label>Lokasi Pickup:
+
+// Ubah field alamat & packaging ikut penghantaran
+function updateAddress() {
+  const val = document.querySelector('input[name=ship]:checked').value;
+  const cont = document.getElementById('addrContainer');
+  const packCont = document.getElementById('packContainer');
+  cont.innerHTML = '';
+
+  if (val === 'pickup') {
+    cont.innerHTML = `<label>Lokasi Pickup:
       <select id="address"><option value="">Pilih</option>
       <option>Guar Utama Guar Chempedak</option></select></label>`;
+    packCont.classList.add('hidden');
   } else {
-    cont.innerHTML=`<label>Alamat Penuh:<input type="text" id="address"></label>`;
-  }
-  // COD cost
-  if(val==='cod'){
-    cont.innerHTML+=`<label>Caj COD (RM):<input type="number" id="codCost" value="0" min="0"></label>`;
+    cont.innerHTML = `<label>Alamat Penuh:<input type="text" id="address"></label>`;
+    if (val === 'cod') {
+      cont.innerHTML += `<label>Caj COD (RM):<input type="number" id="codCost" value="0" min="0"></label>`;
+      packCont.classList.add('hidden');
+    } else if (val === 'pos') {
+      packCont.classList.remove('hidden');
+    }
   }
 }
 
+// Inisialisasi
 renderProducts();
-document.querySelectorAll('input[name=ship]').forEach(i=>i.onchange=updateAddress);
+document.querySelectorAll('input[name=ship]').forEach(i => i.onchange = updateAddress);
 updateAddress();
 
-// STEP 1 → INIT
-document.getElementById('btnInit').onclick = async ()=>{
+// STEP 1 → INIT ORDER
+document.getElementById('btnInit').onclick = async () => {
   const status = document.getElementById('statusInit');
-  status.textContent='Memproses…';
-  // gather
-  const sel = products.filter(p=>{
+  status.textContent = 'Memproses…';
+
+  // Kumpul pilihan produk
+  const sel = products.filter(p => {
     const qtyEl = document.getElementById('q-'+p.code);
-    return qtyEl && +qtyEl.textContent>0;
-  }).map(p=>({code:p.code,qty:+document.getElementById('q-'+p.code).textContent}));
-  if(!sel.length){ status.textContent='Pilih sekurang-kurangnya 1 produk.'; return;}
-  const ship=document.querySelector('input[name=ship]:checked').value,
-        name=document.getElementById('name').value.trim(),
-        phone=document.getElementById('phone').value.trim(),
-        address=document.getElementById('address').value.trim();
-  if(!name||!phone||!address){ status.textContent='Isi nama, telefon & alamat.'; return;}
-  // compute totals
-  let itemsStr='',tp=0,tu=0,tlog=0;
-  sel.forEach(o=>{
-    const p=products.find(x=>x.code===o.code);
-    itemsStr+=`${p.name} x${o.qty}; `;
-    tp+=p.price*o.qty; tu+=p.upah*o.qty; tlog+=p.log*o.qty;
-  });
-  itemsStr=itemsStr.slice(0,-2);
-  let tpack=0,tship=0;
-  if(ship==='pos'){
-    const pack=+document.querySelector('input[name=pack]:checked')?.value||0;
-    tpack=pack*sel.reduce((s,o)=>s+o.qty,0);
-    tship=10*sel.reduce((s,o)=>s+o.qty,0);
-  } else if(ship==='cod'){
-    tship=+document.getElementById('codCost').value||0;
+    return qtyEl && +qtyEl.textContent > 0;
+  }).map(p => ({ code: p.code, qty: +document.getElementById('q-'+p.code).textContent }));
+
+  if (!sel.length) {
+    status.textContent = 'Pilih sekurang-kurangnya 1 produk.';
+    return;
   }
-  const grand = tp+tu+tpack+tship+tlog;
-  // send init
+
+  // Kumpul data lain
+  const ship = document.querySelector('input[name=ship]:checked').value;
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  if (!name || !phone || !address) {
+    status.textContent = 'Isi nama, telefon & alamat.';
+    return;
+  }
+
+  // Kira totals
+  let itemsStr = '', tp=0, tu=0, tlog=0;
+  sel.forEach(o => {
+    const p = products.find(x => x.code === o.code);
+    itemsStr += `${p.name} x${o.qty}; `;
+    tp += p.price*o.qty; tu += p.upah*o.qty; tlog += p.log*o.qty;
+  });
+  itemsStr = itemsStr.slice(0, -2);
+
+  let tpack = 0, tship = 0;
+  if (ship === 'pos') {
+    const packVal = +document.querySelector('input[name=pack]:checked')?.value || 0;
+    tpack = packVal * sel.reduce((s,o)=>s+o.qty,0);
+    tship = 10 * sel.reduce((s,o)=>s+o.qty,0);
+  } else if (ship === 'cod') {
+    tship = +document.getElementById('codCost').value || 0;
+  }
+
+  const grand = tp + tu + tpack + tship + tlog;
+
+  // Hantar ke Apps Script
   try {
-    const res = await fetch(SCRIPT_URL,{
+    const res = await fetch(SCRIPT_URL, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        action:'init',
-        items:itemsStr,
-        totalPrice:tp,
-        totalUpah:tu,
-        totalPackaging:tpack,
-        totalShip:tship,
-        totalLogistic:tlog,
-        grandTotal:grand,
-        customerName:name,
-        customerPhone:phone,
-        customerAddress:address,
-        shippingMethod:ship,
-        packaging: ship==='pos'?document.querySelector('input[name=pack]:checked').value:'',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        action: 'init',
+        items: itemsStr,
+        totalPrice: tp,
+        totalUpah: tu,
+        totalPackaging: tpack,
+        totalShip: tship,
+        totalLogistic: tlog,
+        grandTotal: grand,
+        customerName: name,
+        customerPhone: phone,
+        customerAddress: address,
+        shippingMethod: ship,
+        packaging: ship==='pos'? packVal : 0
       })
     });
     const data = await res.json();
-    if(data.error) throw new Error(data.error);
-    // show step2
+    if (data.error) throw new Error(data.error);
+
+    // Papar step2
     document.getElementById('step1').classList.add('hidden');
     document.getElementById('step2').classList.remove('hidden');
     document.getElementById('summary').textContent = data.summary;
     document.getElementById('instructions').textContent = data.paymentInstructions;
     window.currentTempId = data.tempId;
-  } catch(err){
-    status.textContent = 'Ralat: '+err.message;
+  } catch(err) {
+    console.error(err);
+    status.textContent = 'Ralat: ' + err.message;
   }
 };
 
-// STEP 2 → UPLOAD
+// STEP 2 → UPLOAD BUKTI
 document.getElementById('btnUpload').onclick = () => {
   const file = document.getElementById('proof').files[0];
   const status = document.getElementById('status');
-  if(!file){ status.textContent='Pilih fail dulu.'; return; }
+  if (!file) { status.textContent = 'Pilih fail dulu.'; return; }
   document.getElementById('btnUpload').disabled = true;
   status.textContent = 'Muat naik…';
-  // compress image if needed
-  const onError = e=>{ status.textContent='Gagal: '+e; document.getElementById('btnUpload').disabled=false; };
-  const doUpload = blob=>{
+
+  const onError = e => {
+    status.textContent = 'Gagal: ' + e;
+    document.getElementById('btnUpload').disabled = false;
+  };
+
+  const doUpload = blob => {
     const form = new FormData();
     form.append('action','upload');
     form.append('tempId', window.currentTempId);
-    form.append('file', blob, blob.name||file.name);
+    form.append('file', blob, blob.name || file.name);
+
     fetch(SCRIPT_URL, { method:'POST', body: form })
-      .then(r=>r.json()).then(data=>{
-        if(data.error) throw new Error(data.error);
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) throw new Error(data.error);
         document.getElementById('step2').classList.add('hidden');
         document.getElementById('step3').classList.remove('hidden');
         document.getElementById('finalId').textContent = data.orderId;
-        const wa = document.getElementById('waLink');
-        wa.href = data.waLink;
-      }).catch(e=>onError(e.message));
+        document.getElementById('waLink').href = data.waLink;
+      })
+      .catch(e => onError(e.message));
   };
-  if(file.type.startsWith('image/')){
+
+  if (file.type.startsWith('image/')) {
     const reader = new FileReader();
-    reader.onload = e=>{
-      const img=new Image();
-      img.onload = ()=>{
-        const scale = Math.min(1, 800/img.width),
-              cw=img.width*scale, ch=img.height*scale;
-        const c=document.createElement('canvas'); c.width=cw; c.height=ch;
-        c.getContext('2d').drawImage(img,0,0,cw,ch);
-        c.toBlob(blob=>{ blob.name=file.name; doUpload(blob); }, 'image/jpeg', 0.6);
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 800 / img.width),
+              cw = img.width * scale,
+              ch = img.height * scale;
+        const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+        c.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        c.toBlob(blob => { blob.name = file.name; doUpload(blob); }, 'image/jpeg', 0.6);
       };
       img.src = e.target.result;
     };
