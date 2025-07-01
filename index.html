@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Borang Personal Shopper ShinZ</title>
+  <title>ShinZ Personal Shopper Order Form</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; background: #f8f9fa; }
     h2, h3 { text-align: center; }
@@ -21,13 +21,7 @@
     .info-icon { display: inline-block; width: 16px; height: 16px; border: 1px solid #333; border-radius: 50%; 
                  text-align: center; line-height: 14px; font-size: 12px; cursor: pointer; margin-left: 4px; }
     .hidden { display: none; }
-    input[type="text"], input[type="tel"], input[type="number"], select, a.share-btn {
-      width: 100%; padding: 6px; margin: 4px 0; box-sizing: border-box;
-    }
-    a.share-btn {
-      display: inline-block; text-align: center; text-decoration: none; background: #25D366; color: white; 
-      border-radius: 4px; padding: 8px; margin-top: 8px;
-    }
+    input[type="text"], input[type="tel"], input[type="number"], select { width: 100%; padding: 6px; margin: 4px 0; box-sizing: border-box; }
     button.qty-btn { font-size: 16px; }
   </style>
 </head>
@@ -35,18 +29,17 @@
   <h2>ShinZ Personal Shopper Order Form</h2>
 
   <!-- Seller Info -->
-  <div class="section" id="seller-info">
+  <div class="section">
     <div class="flex-row">
       <span><strong>MGC-S174 (SOLEHUDDIN)</strong></span>
-      <span class="info-icon" title="Klik untuk info"
-            onclick="alert('Solehuddin: 01170351789')">i</span>
+      <span class="info-icon" onclick="alert('Solehuddin: 01170351789')">i</span>
     </div>
   </div>
 
   <!-- Section Pilih Produk -->
   <div id="section-select" class="section">
     <h3>Pilih Produk</h3>
-    <div id="products-container"><!-- di-populate JS --></div>
+    <div id="products-container"></div>
     <div id="no-stock-message" class="warning hidden">Tiada produk dipilih.</div>
 
     <h3>Pilihan Penghantaran</h3>
@@ -54,38 +47,16 @@
     <label><input type="radio" name="ship" value="cod"> COD (Caj ikut jarak)</label>
     <label><input type="radio" name="ship" value="pickup" checked> Self Pickup (RM0)</label>
 
-    <!-- Shipping details: Nama & Telefon sentiasa diperlukan -->
     <div id="shipping-details">
       <label>Nama: <input type="text" id="customerName" required></label>
       <label>Nombor Telefon: <input type="tel" id="customerPhone" required></label>
-      <!-- Alamat: akan di-switch mengikut pilihan penghantaran -->
-      <div id="address-container">
-        <!-- Default: dropdown untuk Self Pickup -->
-        <label>Alamat Pengambilan:
-          <select id="customerAddressSelect" required>
-            <option value="">Pilih Lokasi</option>
-            <option value="Guar Utama Guar Chempedak">Guar Utama Guar Chempedak</option>
-          </select>
-        </label>
-      </div>
+      <div id="address-container"></div>
     </div>
 
-    <!-- COD cost input, hanya untuk COD -->
     <div id="cod-cost-input" class="hidden">
-      <label>Masukkan caj COD ikut jarak (RM): <input type="number" id="codCost" min="0" value="0"></label>
+      <label>Caj COD (RM): <input type="number" id="codCost" min="0" value="0"></label>
     </div>
 
-    <!-- Butang Kongsi Lokasi via WhatsApp untuk COD -->
-    <div id="share-location" class="hidden">
-      <!-- Pautan ini: buka WhatsApp dengan mesej pra-tulis.
-           Pelanggan boleh tambahkan Order ID atau nota sebelum hantar lokasi. -->
-      <a href="https://wa.me/601170351789?text=Hai%2C%20saya%20ingin%20kongsi%20lokasi%20untuk%20COD%20pesanan." 
-         target="_blank" class="share-btn">
-        📍 Klik untuk Kongsi Lokasi di WhatsApp
-      </a>
-    </div>
-
-    <!-- Pilihan pembungkusan hanya untuk Pos -->
     <h3 id="packaging-header" class="hidden">Pilihan Pembungkusan</h3>
     <div id="packaging-section" class="hidden">
       <label><input type="radio" name="pack" value="3" checked> Basic (RM3/box)</label>
@@ -108,8 +79,10 @@
 
   <!-- Hidden Form untuk POST -->
   <form id="hiddenForm"
-        action="https://script.google.com/macros/s/AKfycbwGf1ElOPewtel-s7PtXOL2nDnyt800FYKeOdxHpednfEUttHkqRdkuOqRw4pGAwpIyqw/exec"
-        method="POST" target="_blank" class="hidden">
+        action="https://script.google.com/macros/s/AKfycbxfxcNmWp6wi5sQdp07NRAgcyUUHpeh81dZfG6IN_SDS1_pQFoVhdoa89R-0X6rx8PLiA/exec"
+        method="POST"
+        target="_blank"
+        class="hidden">
     <input type="hidden" name="items" id="field-items">
     <input type="hidden" name="totalPrice" id="field-totalPrice">
     <input type="hidden" name="totalUpah" id="field-totalUpah">
@@ -121,394 +94,212 @@
     <input type="hidden" name="customerAddress" id="field-customerAddress">
     <input type="hidden" name="customerPhone" id="field-customerPhone">
     <input type="hidden" name="shippingMethod" id="field-shippingMethod">
-    <!-- packaging hanya diisi bila Pos -->
     <input type="hidden" name="packaging" id="field-packaging">
-    <!-- Jika perlu kolum tambah: tambah di sini -->
   </form>
 
   <script>
-    console.log("Borang PS: script mulai dijalankan");
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxfxcNmWp6wi5sQdp07NRAgcyUUHpeh81dZfG6IN_SDS1_pQFoVhdoa89R-0X6rx8PLiA/exec';
 
-    // Senarai produk
     const products = [
-      { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, logistic: 5,
-        preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. Maksimum 8 box per perjalanan.", stock: true },
-      { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, logistic: 5,
-        preorderInfo: "Pengambil Iris bermula 15/7/2025 di cawangan TGV terpilih. Maksimum 8 box per perjalanan.", stock: true },
+      { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambil Iris bermula 15/7/2025...", stock: true },
+      { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambil Iris bermula 15/7/2025...", stock: true },
       { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 15, logistic: 5, stock: false },
       { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 15, logistic: 5, stock: false },
       { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 15, logistic: 5, stock: false },
       { name: "Kad Kecemasan Keluangman", code: "IDKM", price: 11.5, upah: 15, logistic: 5, stock: false }
     ];
 
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwGf1ElOPewtel-s7PtXOL2nDnyt800FYKeOdxHpednfEUttHkqRdkuOqRw4pGAwpIyqw/exec";
-
+    // Inisialisasi produk dan shipping address
     function initProducts() {
-      console.log("initProducts dipanggil");
       const container = document.getElementById("products-container");
-      if (!container) {
-        console.error("products-container tidak ditemui!");
-        return;
-      }
       container.innerHTML = "";
       products.forEach(prod => {
         const wrapper = document.createElement("div");
         wrapper.style.marginBottom = "10px";
-
         const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = prod.code;
-        checkbox.id = "prod-" + prod.code;
-        checkbox.disabled = !prod.stock;
+        checkbox.type = "checkbox"; checkbox.value = prod.code; checkbox.id = "prod-"+prod.code; checkbox.disabled = !prod.stock;
         wrapper.appendChild(checkbox);
-
-        const label = document.createElement("label");
-        label.htmlFor = checkbox.id;
-        label.style.fontWeight = "bold";
-        label.style.marginLeft = "5px";
-        label.textContent = prod.name + " (RM" + prod.price + ")";
+        const label = document.createElement("label"); label.htmlFor = checkbox.id; label.style.fontWeight="bold";
+        label.style.marginLeft="5px"; label.textContent = prod.name+" (RM"+prod.price+")";
         wrapper.appendChild(label);
-
-        if (!prod.stock) {
-          label.textContent += " - Habis Stok";
-        } else {
+        if (prod.stock) {
           if (prod.preorderInfo) {
-            const infoIcon = document.createElement("span");
-            infoIcon.className = "info-icon";
-            infoIcon.textContent = "i";
-            infoIcon.onclick = () => alert(prod.preorderInfo);
-            label.appendChild(infoIcon);
+            const info = document.createElement("span"); info.className="info-icon"; info.textContent="i";
+            info.onclick = ()=>alert(prod.preorderInfo);
+            label.appendChild(info);
           }
-          // Kuantiti +/-
-          const qtyWrapper = document.createElement("span");
-          qtyWrapper.className = "qty-control";
-          qtyWrapper.style.marginLeft = "15px";
-          const minusBtn = document.createElement("button");
-          minusBtn.type = "button";
-          minusBtn.className = "qty-btn";
-          minusBtn.textContent = "-";
-          const qtyDisplay = document.createElement("span");
-          qtyDisplay.id = "qty-display-" + prod.code;
-          qtyDisplay.textContent = "0";
-          qtyDisplay.style.margin = "0 5px";
-          const plusBtn = document.createElement("button");
-          plusBtn.type = "button";
-          plusBtn.className = "qty-btn";
-          plusBtn.textContent = "+";
-          plusBtn.addEventListener("click", () => {
-            let qty = parseInt(qtyDisplay.textContent);
-            if (qty < 10) {
-              qtyDisplay.textContent = qty + 1;
-              checkbox.checked = true;
-            }
-          });
-          minusBtn.addEventListener("click", () => {
-            let qty = parseInt(qtyDisplay.textContent);
-            if (qty > 0) {
-              qtyDisplay.textContent = qty - 1;
-              if (qty - 1 === 0) checkbox.checked = false;
-            }
-          });
-          qtyWrapper.appendChild(minusBtn);
-          qtyWrapper.appendChild(qtyDisplay);
-          qtyWrapper.appendChild(plusBtn);
-          wrapper.appendChild(qtyWrapper);
-
-          // Info kos upah
-          const upahDiv = document.createElement("div");
-          upahDiv.style.fontSize = "0.9em";
-          upahDiv.textContent = "Kos Upah: RM" + prod.upah + "/box ";
-          const upahIcon = document.createElement("span");
-          upahIcon.className = "info-icon";
-          upahIcon.textContent = "i";
-          upahIcon.onclick = () => alert("Upah berdasarkan masa pengurusan & perjalanan ~8-10 jam.");
-          upahDiv.appendChild(upahIcon);
-          wrapper.appendChild(upahDiv);
-
-          // Info kos logistik
-          const logDiv = document.createElement("div");
-          logDiv.style.fontSize = "0.9em";
-          logDiv.textContent = "Kos Logistik: RM" + prod.logistic + "/box ";
-          const logIcon = document.createElement("span");
-          logIcon.className = "info-icon";
-          logIcon.textContent = "i";
-          logIcon.onclick = () => alert("Kos perjalanan & angkut barang.");
-          logDiv.appendChild(logIcon);
-          wrapper.appendChild(logDiv);
+          const qty = document.createElement("span"); qty.className="qty-control";
+          const dec = document.createElement("button"); dec.type="button"; dec.textContent="-";
+          const num = document.createElement("span"); num.id="qty-display-"+prod.code; num.textContent="0"; num.style.margin="0 5px";
+          const inc = document.createElement("button"); inc.type="button"; inc.textContent="+";
+          inc.onclick = ()=>{ let v=+num.textContent; if(v<10){ num.textContent= v+1; checkbox.checked=true; } };
+          dec.onclick = ()=>{ let v=+num.textContent; if(v>0){ num.textContent=v-1; if(v-1===0) checkbox.checked=false;} };
+          qty.append(dec,num,inc); wrapper.appendChild(qty);
+          // upah & logistic info
+          const up = document.createElement("div"); up.style.fontSize="0.9em";
+          up.textContent="Kos Upah: RM"+prod.upah+"/box "; const ui=document.createElement("span");
+          ui.className="info-icon"; ui.textContent="i"; ui.onclick=()=>alert("Upah ~8-10 jam kerja.");
+          up.appendChild(ui); wrapper.appendChild(up);
+          const lg = document.createElement("div"); lg.style.fontSize="0.9em";
+          lg.textContent="Kos Logistik: RM"+prod.logistic+"/box "; const li=document.createElement("span");
+          li.className="info-icon"; li.textContent="i"; li.onclick=()=>alert("Kos perjalanan & angkut barang.");
+          lg.appendChild(li); wrapper.appendChild(lg);
+        } else {
+          label.textContent+=" - Habis Stok";
         }
         container.appendChild(wrapper);
       });
 
-      // Listener pilihan penghantaran
-      document.querySelectorAll('input[name="ship"]').forEach(el => {
-        el.addEventListener('change', () => {
-          console.log("Pilihan penghantaran berubah:", el.value);
+      // shipping change handler
+      document.querySelectorAll('input[name="ship"]').forEach(el=>{
+        el.onchange = ()=>{
           const val = document.querySelector('input[name="ship"]:checked').value;
-          // Nama & Telefon sentiasa ada; hanya switch alamat
-          const addressContainer = document.getElementById("address-container");
-          addressContainer.innerHTML = "";
-          if (val === 'pickup') {
-            // Dropdown lokasi
-            const lbl = document.createElement("label");
-            lbl.textContent = "Alamat Pengambilan:";
-            const sel = document.createElement("select");
-            sel.id = "customerAddressSelect";
-            sel.required = true;
-            const optDefault = document.createElement("option");
-            optDefault.value = "";
-            optDefault.textContent = "Pilih Lokasi";
-            sel.appendChild(optDefault);
-            const opt1 = document.createElement("option");
-            opt1.value = "Guar Utama Guar Chempedak";
-            opt1.textContent = "Guar Utama Guar Chempedak";
-            sel.appendChild(opt1);
-            lbl.appendChild(sel);
-            addressContainer.appendChild(lbl);
+          const addr = document.getElementById("address-container");
+          addr.innerHTML = "";
+          // name & phone always present
+          if(val==="pickup"){
+            const l = document.createElement("label"); l.textContent="Alamat Pengambilan:";
+            const s = document.createElement("select"); s.id="customerAddressSelect"; s.required=true;
+            ["","Guar Utama Guar Chempedak"].forEach(t=>{
+              const o=document.createElement("option"); o.value=t; o.textContent=t||"Pilih Lokasi"; s.append(o);
+            });
+            l.appendChild(s); addr.appendChild(l);
           } else {
-            // Pos atau COD: input teks alamat
-            const lbl = document.createElement("label");
-            lbl.textContent = "Alamat Penuh:";
-            const inp = document.createElement("input");
-            inp.type = "text";
-            inp.id = "customerAddress";
-            inp.required = true;
-            lbl.appendChild(inp);
-            addressContainer.appendChild(lbl);
+            const l = document.createElement("label"); l.textContent="Alamat Penuh:";
+            const i = document.createElement("input"); i.type="text"; i.id="customerAddress"; i.required=true;
+            l.appendChild(i); addr.appendChild(l);
           }
-          // COD cost only for COD
-          const codDetails = document.getElementById("cod-cost-input");
-          // Butang share lokasi
-          const shareLocDiv = document.getElementById("share-location");
-          // Packaging only for Pos
-          const packagingHeader = document.getElementById("packaging-header");
-          const packagingSection = document.getElementById("packaging-section");
-          if (val === 'pos') {
-            codDetails.classList.add("hidden");
-            shareLocDiv.classList.add("hidden");
-            packagingHeader.classList.remove("hidden");
-            packagingSection.classList.remove("hidden");
-          } else if (val === 'cod') {
-            codDetails.classList.remove("hidden");
-            shareLocDiv.classList.remove("hidden");
-            // packaging sembunyi untuk COD
-            packagingHeader.classList.add("hidden");
-            packagingSection.classList.add("hidden");
-          } else {
-            // pickup
-            codDetails.classList.add("hidden");
-            shareLocDiv.classList.add("hidden");
-            packagingHeader.classList.add("hidden");
-            packagingSection.classList.add("hidden");
-          }
-        });
+          document.getElementById("cod-cost-input").classList.toggle("hidden", val!=="cod");
+          const pkH = document.getElementById("packaging-header"),
+                pkS = document.getElementById("packaging-section");
+          pkH.classList.toggle("hidden", val!=="pos");
+          pkS.classList.toggle("hidden", val!=="pos");
+        };
       });
-
-      // Trigger initial supaya dropdown alamat muncul untuk default 'pickup'
+      // trigger initial
       document.querySelector('input[name="ship"][value="pickup"]').dispatchEvent(new Event('change'));
     }
 
-    // Kumpul pilihan produk
     function gatherSelected() {
-      const selected = [];
-      products.forEach(prod => {
-        const qtyDisplay = document.getElementById("qty-display-" + prod.code);
-        if (qtyDisplay) {
-          const qty = parseInt(qtyDisplay.textContent) || 0;
-          if (qty > 0) selected.push({ ...prod, qty });
-        }
-      });
-      console.log("Produk terpilih:", selected);
-      return selected;
+      return products.reduce((arr,prod)=>{
+        const num = document.getElementById("qty-display-"+prod.code);
+        const v = num?+num.textContent:0;
+        if(v>0) arr.push({...prod,qty:v});
+        return arr;
+      },[]);
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      console.log("DOMContentLoaded: initialize");
-      initProducts();
-
-      // Butang Semak
-      document.getElementById("toReview").addEventListener("click", () => {
-        console.log("Klik Semak");
-        const selected = gatherSelected();
-        if (selected.length === 0) {
-          document.getElementById("no-stock-message").classList.remove("hidden");
-          return;
-        }
-        document.getElementById("no-stock-message").classList.add("hidden");
-        const ship = document.querySelector('input[name="ship"]:checked');
-        if (!ship) {
-          alert("Sila pilih penghantaran.");
-          return;
-        }
-        const name = document.getElementById("customerName").value.trim();
-        const phone = document.getElementById("customerPhone").value.trim();
-        if (!name || !phone) {
-          alert("Sila isi Nama dan Nombor Telefon.");
-          return;
-        }
-        // Alamat bergantung select/input
-        const addressContainer = document.getElementById("address-container");
-        const selectAddr = addressContainer.querySelector("select#customerAddressSelect");
-        const inputAddr = addressContainer.querySelector("input#customerAddress");
-        let addressVal = "";
-        if (selectAddr) addressVal = selectAddr.value.trim();
-        else if (inputAddr) addressVal = inputAddr.value.trim();
-        if (!addressVal) {
-          alert("Sila isi/pilih Alamat.");
-          return;
-        }
-        // Papar ringkasan
-        showSummary(selected);
-        document.getElementById("orderIdDisplayReview").textContent = "(dijana di server)";
-        document.getElementById("section-select").classList.add("hidden");
-        document.getElementById("section-review").classList.remove("hidden");
+    function showSummary(sel){
+      const d=document.getElementById("summary"); d.innerHTML="";
+      let totalPrice=0,totalUpah=0,totalPack=0,totalBoxes=0;
+      sel.forEach(it=>{
+        totalPrice+=it.price*it.qty; totalUpah+=it.upah*it.qty; totalBoxes+=it.qty;
+        const p=document.createElement("p"); p.className="summary-item";
+        p.innerHTML=`${it.name} x${it.qty}: RM${it.price} x${it.qty} = RM${(it.price*it.qty).toFixed(2)}`;
+        d.appendChild(p);
       });
-
-      // Butang Kembali
-      document.getElementById("backBtn").addEventListener("click", () => {
-        console.log("Klik Kembali");
-        document.getElementById("section-review").classList.add("hidden");
-        document.getElementById("section-select").classList.remove("hidden");
-      });
-
-      // Butang Sahkan Order
-      document.getElementById("confirmBtn").addEventListener("click", () => {
-        console.log("Klik Sahkan Order");
-        const btn = document.getElementById("confirmBtn");
-        btn.disabled = true;
-        btn.textContent = "Menghantar...";
-        const summaryDiv = document.getElementById("summary");
-        const totalPrice = parseFloat(summaryDiv.dataset.totalPrice) || 0;
-        const totalUpah = parseFloat(summaryDiv.dataset.totalUpah) || 0;
-        const totalPack = parseFloat(summaryDiv.dataset.totalPack) || 0;
-        const totalBoxes = parseInt(summaryDiv.dataset.totalBoxes) || 0;
-        let totalShip = 0;
-        const shipSel = document.querySelector('input[name="ship"]:checked').value;
-        if (shipSel === 'pos') {
-          totalShip = 10 * totalBoxes;
-        } else if (shipSel === 'cod') {
-          totalShip = parseFloat(document.getElementById("codCost").value) || 0;
-        }
-        const totalLogistic = totalBoxes * 5;
-        const grandTotal = totalPrice + totalUpah + totalPack + totalShip + totalLogistic;
-
-        // Isi hidden fields
-        document.getElementById("field-items").value = gatherSelected().map(item => `${item.code} x${item.qty}`).join("; ");
-        document.getElementById("field-totalPrice").value = totalPrice;
-        document.getElementById("field-totalUpah").value = totalUpah;
-        document.getElementById("field-totalPackaging").value = totalPack;
-        document.getElementById("field-totalShip").value = totalShip;
-        document.getElementById("field-totalLogistic").value = totalLogistic;
-        document.getElementById("field-grandTotal").value = grandTotal;
-        document.getElementById("field-customerName").value = document.getElementById("customerName").value.trim();
-        // Alamat dari select/input
-        const addrContainer = document.getElementById("address-container");
-        const selAddr = addrContainer.querySelector("select#customerAddressSelect");
-        const inpAddr = addrContainer.querySelector("input#customerAddress");
-        let addressVal = "";
-        if (selAddr) addressVal = selAddr.value.trim();
-        else if (inpAddr) addressVal = inpAddr.value.trim();
-        document.getElementById("field-customerAddress").value = addressVal;
-        document.getElementById("field-customerPhone").value = document.getElementById("customerPhone").value.trim();
-        document.getElementById("field-shippingMethod").value = shipSel;
-        // Packaging hanya jika Pos
-        let packVal = "";
-        if (shipSel === 'pos') {
-          const packEl = document.querySelector('input[name="pack"]:checked');
-          if (packEl) packVal = packEl.value;
-        }
-        document.getElementById("field-packaging").value = packVal;
-
-        // Submit hidden form → buka tab baru
-        document.getElementById("hiddenForm").submit();
-
-        // Re-enable butang selepas beberapa saat
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.textContent = "Sahkan Order";
-        }, 5000);
-      });
-    });
-
-    // Papar ringkasan sebelum submit
-    function showSummary(selected) {
-      console.log("showSummary dipanggil");
-      const summaryDiv = document.getElementById("summary");
-      summaryDiv.innerHTML = "";
-      let totalPrice = 0, totalUpah = 0, totalPackCostLocal = 0;
-      let totalBoxes = 0;
-      selected.forEach(item => {
-        totalPrice += item.price * item.qty;
-        totalUpah += item.upah * item.qty;
-        totalBoxes += item.qty;
-        const p = document.createElement("p");
-        p.className = "summary-item";
-        p.innerHTML = `${item.name} x${item.qty}: RM${item.price} x${item.qty} = RM${(item.price*item.qty).toFixed(2)}`;
-        summaryDiv.appendChild(p);
-      });
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-        innerHTML: `<strong>Total Upah</strong>: RM${totalUpah.toFixed(2)} (RM25/box)`,
-        className: "summary-item"
-      }));
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-        innerHTML: `<strong>Total Logistik</strong>: RM${(totalBoxes*5).toFixed(2)} (RM5/box)`,
-        className: "summary-item"
-      }));
-      const shipSel = document.querySelector('input[name="ship"]:checked').value;
-      let totalPackCost = 0;
-      if (shipSel === 'pos') {
-        const packCostPer = parseFloat(document.querySelector('input[name="pack"]:checked').value) || 0;
-        totalPackCost = packCostPer * totalBoxes;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Total Pembungkusan</strong>: RM${totalPackCost.toFixed(2)} (RM${packCostPer}/box)`,
-          className: "summary-item"
-        }));
-      }
-      if (shipSel === 'pos') {
-        const totalShipCost = 10 * totalBoxes;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Penghantaran Pos</strong>: RM10 x ${totalBoxes} kotak = RM${totalShipCost.toFixed(2)}`,
-          className: "summary-item"
-        }));
-      } else if (shipSel === 'cod') {
-        const codCost = parseFloat(document.getElementById("codCost").value) || 0;
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Penghantaran COD</strong>: RM${codCost.toFixed(2)}`,
-          className: "summary-item"
-        }));
-        // Sertakan butang kongsi lokasi di ringkasan
-        const shareLocDiv = document.getElementById("share-location");
-        if (shareLocDiv) {
-          // Jika belum dipaparkan, boleh letak nota di ringkasan:
-          const note = document.createElement("p");
-          note.className = "summary-item";
-          note.innerHTML = `Sila kongsi lokasi melalui WhatsApp sebelum/selepas hantar pesanan:`;
-          summaryDiv.appendChild(note);
-          summaryDiv.appendChild(shareLocDiv.cloneNode(true)); 
-          // cloneNode supaya ringkasan ada butang juga
-        }
-      } else {
-        // pickup
-        summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-          innerHTML: `<strong>Self Pickup</strong>: Guar Utama Guar Chempedak`,
-          className: "summary-item"
-        }));
-      }
-      const totalLogistic = totalBoxes * 5;
-      const grandTotal = totalPrice + totalUpah + totalPackCost + totalLogistic +
-                         (shipSel === 'pos' ? 10 * totalBoxes :
-                          shipSel === 'cod' ? (parseFloat(document.getElementById("codCost").value)||0) : 0);
-      summaryDiv.appendChild(Object.assign(document.createElement("p"), {
-        innerHTML: `<strong>Jumlah Keseluruhan</strong>: RM${grandTotal.toFixed(2)}`,
+      d.appendChild(Object.assign(document.createElement("p"),{
+        innerHTML:`<strong>Total Upah</strong>: RM${totalUpah.toFixed(2)}`,
         className:"summary-item"
       }));
-      // Simpan data untuk submit
-      summaryDiv.dataset.totalPrice = totalPrice;
-      summaryDiv.dataset.totalUpah = totalUpah;
-      summaryDiv.dataset.totalPack = totalPackCost;
-      summaryDiv.dataset.totalBoxes = totalBoxes;
-      summaryDiv.dataset.totalShip = (shipSel === 'pos' ? 10 * totalBoxes :
-                                     shipSel === 'cod' ? (parseFloat(document.getElementById("codCost").value)||0) : 0);
+      d.appendChild(Object.assign(document.createElement("p"),{
+        innerHTML:`<strong>Total Logistik</strong>: RM${(totalBoxes*5).toFixed(2)}`,
+        className:"summary-item"
+      }));
+      const ship=document.querySelector('input[name="ship"]:checked').value;
+      let packCost=0;
+      if(ship==="pos"){
+        const pp=+document.querySelector('input[name="pack"]:checked').value;
+        packCost=pp*totalBoxes;
+        d.appendChild(Object.assign(document.createElement("p"),{
+          innerHTML:`<strong>Total Pembungkusan</strong>: RM${packCost.toFixed(2)}`,
+          className:"summary-item"
+        }));
+        d.appendChild(Object.assign(document.createElement("p"),{
+          innerHTML:`<strong>Penghantaran Pos</strong>: RM10 x${totalBoxes} = RM${(10*totalBoxes).toFixed(2)}`,
+          className:"summary-item"
+        }));
+      } else if(ship==="cod"){
+        const cc=+document.getElementById("codCost").value||0;
+        d.appendChild(Object.assign(document.createElement("p"),{
+          innerHTML:`<strong>Penghantaran COD</strong>: RM${cc.toFixed(2)}`,
+          className:"summary-item"
+        }));
+      } else {
+        d.appendChild(Object.assign(document.createElement("p"),{
+          innerHTML:`<strong>Self Pickup</strong>: Guar Utama Guar Chempedak`,
+          className:"summary-item"
+        }));
+      }
+      const shipCost = ship==="pos"?10*totalBoxes: ship==="cod"?(+document.getElementById("codCost").value||0):0;
+      const grand = totalPrice+totalUpah+packCost+shipCost+(totalBoxes*5);
+      d.appendChild(Object.assign(document.createElement("p"),{
+        innerHTML:`<strong>Jumlah Keseluruhan</strong>: RM${grand.toFixed(2)}`,
+        className:"summary-item"
+      }));
+      d.dataset.totalPrice=totalPrice; d.dataset.totalUpah=totalUpah;
+      d.dataset.totalPack=packCost; d.dataset.totalBoxes=totalBoxes;
+      d.dataset.totalShip=shipCost;
     }
+
+    document.addEventListener("DOMContentLoaded", ()=>{
+      initProducts();
+      document.getElementById("toReview").onclick=()=>{
+        const sel=gatherSelected();
+        if(!sel.length){ document.getElementById("no-stock-message").classList.remove("hidden"); return; }
+        document.getElementById("no-stock-message").classList.add("hidden");
+        const ship=document.querySelector('input[name="ship"]:checked');
+        if(!ship){ alert("Sila pilih penghantaran."); return; }
+        const name=document.getElementById("customerName").value.trim(),
+              phone=document.getElementById("customerPhone").value.trim();
+        if(!name||!phone){ alert("Sila isi Nama & Telefon."); return; }
+        const addrCont=document.getElementById("address-container"),
+              selA=addrCont.querySelector("select#customerAddressSelect"),
+              inpA=addrCont.querySelector("input#customerAddress");
+        const addrVal = selA?selA.value.trim(): inpA?inpA.value.trim(): "";
+        if(!addrVal){ alert("Sila isi/pilih Alamat."); return; }
+        showSummary(sel);
+        document.getElementById("orderIdDisplayReview").textContent="(dijana di server)";
+        document.getElementById("section-select").classList.add("hidden");
+        document.getElementById("section-review").classList.remove("hidden");
+      };
+      document.getElementById("backBtn").onclick=()=>{
+        document.getElementById("section-review").classList.add("hidden");
+        document.getElementById("section-select").classList.remove("hidden");
+      };
+      document.getElementById("confirmBtn").onclick=()=>{
+        const btn=document.getElementById("confirmBtn");
+        btn.disabled=true; btn.textContent="Menghantar...";
+        const sum=document.getElementById("summary");
+        const tp=+sum.dataset.totalPrice, tu=+sum.dataset.totalUpah, tpk=+sum.dataset.totalPack;
+        const tb=+sum.dataset.totalBoxes, ts=+sum.dataset.totalShip;
+        const grand=tp+tu+tpk+ts+(tb*5);
+        document.getElementById("field-items").value = gatherSelected().map(i=>`${i.name} x${i.qty}`).join("; ");
+        document.getElementById("field-totalPrice").value = tp;
+        document.getElementById("field-totalUpah").value = tu;
+        document.getElementById("field-totalPackaging").value = tpk;
+        document.getElementById("field-totalShip").value = ts;
+        document.getElementById("field-totalLogistic").value = tb*5;
+        document.getElementById("field-grandTotal").value = grand;
+        document.getElementById("field-customerName").value = document.getElementById("customerName").value.trim();
+        const addrCont=document.getElementById("address-container"),
+              selA=addrCont.querySelector("select#customerAddressSelect"),
+              inpA=addrCont.querySelector("input#customerAddress");
+        document.getElementById("field-customerAddress").value = selA?selA.value.trim(): inpA.value.trim();
+        document.getElementById("field-customerPhone").value = document.getElementById("customerPhone").value.trim();
+        const shipVal=document.querySelector('input[name="ship"]:checked').value;
+        document.getElementById("field-shippingMethod").value=shipVal;
+        let packVal="";
+        if(shipVal==="pos"){
+          packVal = document.querySelector('input[name="pack"]:checked').value;
+        }
+        document.getElementById("field-packaging").value = packVal;
+        document.getElementById("hiddenForm").submit();
+        setTimeout(()=>{
+          btn.disabled=false; btn.textContent="Sahkan Order";
+        },5000);
+      };
+    });
   </script>
 </body>
 </html>
