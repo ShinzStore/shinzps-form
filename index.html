@@ -664,7 +664,7 @@
         document.getElementById("section-select").classList.remove("hidden");
       };
       
-      document.getElementById("confirmBtn").onclick = async () => {
+      document.getElementById("confirmBtn").onclick = async function() {
         const fileInput = document.getElementById('paymentProof');
         if (!fileInput.files || fileInput.files.length === 0) {
           alert('Sila upload bukti pembayaran terlebih dahulu.');
@@ -716,10 +716,19 @@
           // Call Apps Script function to upload to Drive
           try {
             imageUrl = await new Promise((resolve, reject) => {
-              google.script.run
-                .withSuccessHandler(resolve)
-                .withFailureHandler(reject)
-                .uploadToDrive(file);
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                const base64 = e.target.result.split(',')[1];
+                google.script.run
+                  .withSuccessHandler(resolve)
+                  .withFailureHandler(reject)
+                  .uploadToDrive({
+                    name: file.name,
+                    mimeType: file.type,
+                    data: base64 
+                  });
+              };
+              reader.readAsDataURL(file);
             });
             if (!imageUrl) throw new Error('Gagal upload imej ke Drive');
           } catch (error) {
@@ -750,18 +759,7 @@
             
           // Submit form
           document.getElementById("hiddenForm").submit();
-        formData.append('totalPrice', document.getElementById("field-totalPrice").value);
-        formData.append('totalUpah', document.getElementById("field-totalUpah").value);
-        formData.append('totalPackaging', document.getElementById("field-totalPackaging").value);
-        formData.append('totalShip', document.getElementById("field-totalShip").value);
-        formData.append('totalLogistic', document.getElementById("field-totalLogistic").value);
-        formData.append('grandTotal', document.getElementById("field-grandTotal").value);
-        formData.append('customerName', document.getElementById("field-customerName").value);
-        formData.append('customerAddress', document.getElementById("field-customerAddress").value);
-        formData.append('customerPhone', document.getElementById("field-customerPhone").value);
-        formData.append('shippingMethod', document.getElementById("field-shippingMethod").value);
-        formData.append('packaging', document.getElementById("field-packaging").value);
-        formData.append('paymentProof', fileInput.files[0]);
+        document.getElementById("hiddenForm").submit();
         
         } catch (error) {
           console.error('Error:', error);
@@ -781,3 +779,4 @@
   </script>
 </body>
 </html>
+
