@@ -731,7 +731,24 @@
           if (!imageUrl) throw new Error('Gagal upload imej ke Drive');
           document.getElementById('field-paymentProofURL').value = imageUrl;
           
-          // Submit form data after successful image upload
+          // Set all form fields
+          document.getElementById("field-items").value = gatherSelected().map(i => `${i.name} x${i.qty}`).join("; ");
+          document.getElementById("field-totalPrice").value = tp;
+          document.getElementById("field-totalUpah").value = tu;
+          document.getElementById("field-totalPackaging").value = tpk;
+          document.getElementById("field-totalShip").value = ts;
+          document.getElementById("field-totalLogistic").value = tb * 5;
+          document.getElementById("field-grandTotal").value = grand;
+          document.getElementById("field-customerName").value = document.getElementById("customerName").value.trim();
+          document.getElementById("field-customerAddress").value = addrCont.querySelector("select#customerAddressSelect") ? 
+            addrCont.querySelector("select#customerAddressSelect").value.trim() : 
+            addrCont.querySelector("input#customerAddress").value.trim();
+          document.getElementById("field-customerPhone").value = document.getElementById("customerPhone").value.trim();
+          document.getElementById("field-shippingMethod").value = shipVal;
+          document.getElementById("field-packaging").value = shipVal === "pos" ? 
+            document.querySelector('input[name="pack"]:checked').value : "";
+            
+          // Submit form
           document.getElementById("hiddenForm").submit();
         formData.append('totalPrice', document.getElementById("field-totalPrice").value);
         formData.append('totalUpah', document.getElementById("field-totalUpah").value);
@@ -748,7 +765,10 @@
         
         } catch (error) {
           console.error('Error:', error);
-          alert(`Ralat semasa menghantar order. Sila cuba lagi atau hubungi: 01170351789\n\nKod Ralat: ${error.message}`);
+          let errorMsg = `Ralat semasa menghantar order. Sila cuba lagi atau hubungi: 01170351789\n\n`;
+          errorMsg += `Kod Ralat: ${error.message}\n\n`;
+          errorMsg += `Jika masalah berterusan, sila screenshot mesej ini dan hantar kepada admin.`;
+          alert(errorMsg);
           btn.disabled = false;
           spinner.classList.add("hidden");
           btn.textContent = "Sahkan & Hantar Order";
@@ -761,4 +781,3 @@
   </script>
 </body>
 </html>
-
