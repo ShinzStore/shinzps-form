@@ -102,12 +102,15 @@
       <h3>Bukti Pembayaran</h3>
       <div class="file-input-wrapper">
         <label class="file-input-label" for="paymentProof">
-          Pilih Fail (JPG/PNG/PDF)
+          Pilih Fail (JPG/PNG max 2MB)
         </label>
-        <input type="file" id="paymentProof" accept="image/*,.pdf" style="display: none;" onchange="showFileName()">
+        <input type="file" id="paymentProof" accept="image/*" style="display: none;" onchange="showFileName(this)">
       </div>
       <span id="fileName" class="file-name"></span>
-      <p><small>Sila upload bukti pembayaran (resit/ss pembayaran)</small></p>
+      <p><small>Sila ambil gambar resit/screenshot pembayaran (format JPG/PNG)</small></p>
+      <div id="filePreview" class="hidden" style="margin-top:10px;">
+        <img id="previewImage" style="max-width:100%; max-height:200px; border:1px solid #ddd;">
+      </div>
     </div>
     
     <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -137,6 +140,7 @@
     <input type="hidden" name="customerPhone" id="field-customerPhone">
     <input type="hidden" name="shippingMethod" id="field-shippingMethod">
     <input type="hidden" name="packaging" id="field-packaging">
+    <input type="hidden" name="paymentProofURL" id="field-paymentProofURL">
   </form>
 
   <script>
@@ -581,20 +585,31 @@
       d.dataset.totalShip = shipCost;
     }
 
-    // Tunjukkan nama fail yang dipilih dan validasi saiz
-    function showFileName() {
-      const fileInput = document.getElementById('paymentProof');
+    // Tunjukkan nama fail dan preview gambar
+    function showFileName(input) {
       const fileNameSpan = document.getElementById('fileName');
-      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      const previewDiv = document.getElementById('filePreview');
+      const previewImg = document.getElementById('previewImage');
+      const MAX_SIZE = 2 * 1024 * 1024; // 2MB
       
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
+      if (input.files.length > 0) {
+        const file = input.files[0];
         if (file.size > MAX_SIZE) {
           alert('Saiz fail terlalu besar. Sila pilih fail kurang dari 5MB.');
           fileInput.value = '';
           fileNameSpan.textContent = '';
         } else {
           fileNameSpan.textContent = file.name;
+          
+          // Show preview for images
+          if (file.type.match('image.*')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              previewImg.src = e.target.result;
+              previewDiv.classList.remove('hidden');
+            }
+            reader.readAsDataURL(file);
+          }
         }
       } else {
         fileNameSpan.textContent = '';
@@ -649,7 +664,7 @@
         document.getElementById("section-select").classList.remove("hidden");
       };
       
-      document.getElementById("confirmBtn").onclick = () => {
+      document.getElementById("confirmBtn").onclick = async () => {
         const fileInput = document.getElementById('paymentProof');
         if (!fileInput.files || fileInput.files.length === 0) {
           alert('Sila upload bukti pembayaran terlebih dahulu.');
@@ -692,9 +707,32 @@
         }
         document.getElementById("field-packaging").value = packVal;
         
-        // Create FormData for file upload
-        const formData = new FormData();
-        formData.append('items', document.getElementById("field-items").value);
+        // Upload image to Google Drive first
+        const file = fileInput.files[0];
+        if (!file) return;
+        
+        let imageUrl = '';
+        try {
+          // Call Apps Script function to upload to Drive
+          try {
+            imageUrl = await new Promise((resolve, reject) => {
+              google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .uploadToDrive(file);
+            });
+            if (!imageUrl) throw new Error('Gagal upload imej ke Drive');
+          } catch (error) {
+            console.error('Upload error:', error);
+            alert(`Gagal upload bukti bayaran: ${error.message}`);
+            throw error;
+          }
+          
+          if (!imageUrl) throw new Error('Gagal upload imej ke Drive');
+          document.getElementById('field-paymentProofURL').value = imageUrl;
+          
+          // Submit form data after successful image upload
+          document.getElementById("hiddenForm").submit();
         formData.append('totalPrice', document.getElementById("field-totalPrice").value);
         formData.append('totalUpah', document.getElementById("field-totalUpah").value);
         formData.append('totalPackaging', document.getElementById("field-totalPackaging").value);
@@ -708,37 +746,16 @@
         formData.append('packaging', document.getElementById("field-packaging").value);
         formData.append('paymentProof', fileInput.files[0]);
         
-        // Submit via fetch with proper headers and CORS mode
-        fetch(scriptURL, {
-          method: 'POST',
-          body: formData,
-          redirect: 'follow',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.text();
-        })
-        .then(data => {
-          document.open();
-          document.write(data);
-          document.close();
-        })
-        .catch(error => {
+        } catch (error) {
           console.error('Error:', error);
           alert(`Ralat semasa menghantar order. Sila cuba lagi atau hubungi: 01170351789\n\nKod Ralat: ${error.message}`);
           btn.disabled = false;
           spinner.classList.add("hidden");
           btn.textContent = "Sahkan & Hantar Order";
-          // Also reset form in case of error
           document.getElementById("paymentProof").value = '';
           document.getElementById("fileName").textContent = '';
-        });
+          document.getElementById("filePreview").classList.add("hidden");
+        }
       };
     });
   </script>
