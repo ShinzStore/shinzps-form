@@ -17,11 +17,9 @@
     .btn-primary { background: #007bff; color: white; }
     .btn-secondary { background: #6c757d; color: white; }
     .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
-    .info-icon { display: inline-block; width: 16px; height: 16px; border: 1px solid #333; border-radius: 50%; 
-                 text-align: center; line-height: 14px; font-size: 12px; cursor: pointer; margin-left: 4px; }
+    .info-icon { display: inline-block; width: 16px; height: 16px; border: 1px solid #333; border-radius: 50%; text-align: center; line-height: 14px; font-size: 12px; cursor: pointer; margin-left: 4px; }
     .hidden { display: none; }
     input[type="text"], input[type="tel"], input[type="number"], select { width: 100%; padding: 6px; margin: 4px 0; box-sizing: border-box; }
-    button.qty-btn { font-size: 16px; }
   </style>
 </head>
 <body>
@@ -60,7 +58,7 @@
     <h3>Ringkasan Order</h3>
     <div id="summary"></div>
     <div class="flex-row">
-      <label>Order ID: <span id="orderIdDisplayReview">(dijana di server)</span></label>
+      <label>Order ID: <span id="orderIdDisplayReview"></span></label>
     </div>
     <button type="button" id="backBtn" class="btn btn-secondary">Kembali</button>
     <button type="button" id="confirmBtn" class="btn btn-primary">Sahkan Order</button>
@@ -69,7 +67,6 @@
         method="POST"
         target="_blank"
         class="hidden">
-    <input type="hidden" name="action" value="init">
     <input type="hidden" name="items" id="field-items">
     <input type="hidden" name="totalPrice" id="field-totalPrice">
     <input type="hidden" name="totalUpah" id="field-totalUpah">
@@ -94,142 +91,160 @@
       { name: "Kad Kecemasan Keluangman", code: "IDKM", price: 11.5, upah: 15, logistic: 5, stock: false }
     ];
 
-    // Inisialisasi produk dan shipping address
     function initProducts() {
       const container = document.getElementById("products-container");
       container.innerHTML = "";
       products.forEach(prod => {
-        const wrapper = document.createElement("div");
-        wrapper.style.marginBottom = "10px";
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox"; checkbox.value = prod.code; checkbox.id = "prod-"+prod.code; checkbox.disabled = !prod.stock;
+        const wrapper = document.createElement("div"); wrapper.style.marginBottom = "10px";
+        const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.value = prod.code; checkbox.id = "prod-" + prod.code; checkbox.disabled = !prod.stock;
         wrapper.appendChild(checkbox);
-        const label = document.createElement("label"); label.htmlFor = checkbox.id; label.style.fontWeight="bold";
-        label.style.marginLeft="5px"; label.textContent = prod.name+" (RM"+prod.price+")";
+        const label = document.createElement("label"); label.htmlFor = checkbox.id; label.style.fontWeight = "bold"; label.style.marginLeft = "5px";
+        label.textContent = prod.name + " (RM" + prod.price + ")";
         wrapper.appendChild(label);
+
         if (prod.stock) {
           if (prod.preorderInfo) {
-            const info = document.createElement("span"); info.className="info-icon"; info.textContent="i";
-            info.onclick = ()=>alert(prod.preorderInfo);
+            const info = document.createElement("span"); info.className = "info-icon"; info.textContent = "i";
+            info.onclick = () => alert(prod.preorderInfo);
             label.appendChild(info);
           }
-          const qty = document.createElement("span"); qty.className="qty-control";
-          const dec = document.createElement("button"); dec.type="button"; dec.textContent="-";
-          const num = document.createElement("span"); num.id="qty-display-"+prod.code; num.textContent="0"; num.style.margin="0 5px";
-          const inc = document.createElement("button"); inc.type="button"; inc.textContent="+";
-          inc.onclick = ()=>{ let v=+num.textContent; if(v<10){ num.textContent= v+1; checkbox.checked=true; } };
-          dec.onclick = ()=>{ let v=+num.textContent; if(v>0){ num.textContent=v-1; if(v-1===0) checkbox.checked=false;} };
-          qty.append(dec,num,inc); wrapper.appendChild(qty);
-          const up = document.createElement("div"); up.style.fontSize="0.9em";
-          up.textContent="Kos Upah: RM"+prod.upah+"/box "; const ui=document.createElement("span");
-          ui.className="info-icon"; ui.textContent="i"; ui.onclick=()=>alert("Upah ~8-10 jam kerja.");
-          up.appendChild(ui); wrapper.appendChild(up);
-          const lg = document.createElement("div"); lg.style.fontSize="0.9em";
-          lg.textContent="Kos Logistik: RM"+prod.logistic+"/box "; const li=document.createElement("span");
-          li.className="info-icon"; li.textContent="i"; li.onclick=()=>alert("Kos perjalanan & angkut barang.");
-          lg.appendChild(li); wrapper.appendChild(lg);
+          const qty = document.createElement("span"); qty.className = "qty-control";
+          const dec = document.createElement("button"); dec.type = "button"; dec.textContent = "-";
+          const num = document.createElement("span"); num.id = "qty-display-" + prod.code; num.textContent = "0"; num.style.margin = "0 5px";
+          const inc = document.createElement("button"); inc.type = "button"; inc.textContent = "+";
+          inc.onclick = () => { let v = +num.textContent; if (v < 99) { num.textContent = v + 1; checkbox.checked = true; togglePackaging(); } };
+          dec.onclick = () => { let v = +num.textContent; if (v > 0) { num.textContent = v - 1; if (v - 1 === 0) checkbox.checked = false; togglePackaging(); } };
+          qty.append(dec, num, inc); wrapper.appendChild(qty);
+          const up = document.createElement("div"); up.style.fontSize = "0.9em"; up.textContent = "Kos Upah: RM" + prod.upah + "/box ";
+          const ui = document.createElement("span"); ui.className = "info-icon"; ui.textContent = "i"; ui.onclick = () => alert("Upah ~8-10 jam kerja."); up.appendChild(ui); wrapper.appendChild(up);
+          const lg = document.createElement("div"); lg.style.fontSize = "0.9em"; lg.textContent = "Kos Logistik: RM" + prod.logistic + "/box ";
+          const li = document.createElement("span");<li class="info-icon" onclick="()=&gt;alert('Kos perjalanan & angkut barang.')"; li.textContent = "i"; lg.appendChild(li); wrapper.appendChild(lg);
         } else {
-          label.textContent+=" - Habis Stok";
+          label.textContent += " - Habis Stok";
         }
         container.appendChild(wrapper);
       });
 
-      document.querySelectorAll('input[name="ship"]').forEach(el=>{
-        el.onchange = ()=>{
+      document.querySelectorAll('input[name="ship"]').forEach(el => {
+        el.onchange = () => {
           const val = document.querySelector('input[name="ship"]:checked').value;
-          const addr = document.getElementById("address-container");
-          addr.innerHTML = "";
-          if(val==="pickup"){ const l = document.createElement("label"); l.textContent="Alamat Pengambilan:";
-            const s = document.createElement("select"); s.id="customerAddressSelect"; s.required=true;
-            ["","Guar Utama Guar Chempedak"].forEach(t=>{ const o=document.createElement("option"); o.value=t; o.textContent=t||"Pilih Lokasi"; s.append(o); });
+          const addr = document.getElementById("address-container"); addr.innerHTML = "";
+          if (val === "pickup") {
+            const l = document.createElement("label"); l.textContent = "Alamat Pengambilan: ";
+            const s = document.createElement("select"); s.id = "customerAddressSelect"; s.required = true;
+            ["", "Guar Utama Guar Chempedak"].forEach(t => { const o = document.createElement("option"); o.value = t; o.textContent = t || "Pilih Lokasi"; s.append(o); });
             l.appendChild(s); addr.appendChild(l);
-          } else { const l = document.createElement("label"); l.textContent="Alamat Penuh:";
-            const i = document.createElement("input"); i.type="text"; i.id="customerAddress"; i.required=true;
-            l.appendChild(i); addr.appendChild(l);
+          } else if (val === "pos" || val === "cod") {
+            const l = document.createElement("label"); l.textContent = "Alamat Penuh: ";
+            const i = document.createElement("input"); i.type = "text"; i.id = "customerAddress"; i.required = true; l.appendChild(i); addr.appendChild(l);
           }
-          document.getElementById("cod-cost-input").classList.toggle("hidden", val!=="cod");
-          const pkH = document.getElementById("packaging-header"), pkS = document.getElementById("packaging-section");
-          pkH.classList.toggle("hidden", val!=="pos"); pkS.classList.toggle("hidden", val!=="pos");
+          document.getElementById("cod-cost-input").classList.toggle("hidden", val !== "cod");
+          if (val !== "cod") document.getElementById("codCost").value = 0;
+          function togglePackaging() {
+            const anySelected = [...document.querySelectorAll("#products-container input[type=checkbox]")].some(cb => cb.checked);
+            document.getElementById("packaging-header").classList.toggle("hidden", !anySelected || val === "pickup");
+            document.getElementById("packaging-section").classList.toggle("hidden", !anySelected || val === "pickup");
+          }
+          togglePackaging();
         };
       });
       document.querySelector('input[name="ship"][value="pickup"]').dispatchEvent(new Event('change'));
     }
 
     function gatherSelected() {
-      return products.reduce((arr,prod)=>{
-        const num = document.getElementById("qty-display-"+prod.code);
-        const v = num?+num.textContent:0;
-        if(v>0) arr.push({...prod,qty:v});
+      return products.reduce((arr, prod) => {
+        const num = document.getElementById("qty-display-" + prod.code);
+        const v = num ? +num.textContent : 0;
+        if (v > 0) arr.push({ ...prod, qty: v });
         return arr;
-      },[]);
+      }, []);
     }
 
-    function showSummary(sel){
-      const d=document.getElementById("summary"); d.innerHTML="";
-      let totalPrice=0,totalUpah=0,packCost=0,boxes=0;
-      sel.forEach(it=>{ totalPrice+=it.price*it.qty; totalUpah+=it.upah*it.qty; boxes+=it.qty;
-        const p=document.createElement("p"); p.className="summary-item";
-        p.innerHTML=`${it.name} x${it.qty}: RM${(it.price*it.qty).toFixed(2)}`; d.appendChild(p);
+    function generateOrderId() {
+      return 'PS' + Date.now().toString(36).toUpperCase();
+    }
+
+    function showSummary(sel) {
+      const d = document.getElementById("summary"); d.innerHTML = "";
+      let totalPrice = 0, totalUpah = 0, totalPack = 0, totalShip = 0, totalLogistic = 0;
+      sel.forEach(it => {
+        totalPrice += it.price * it.qty;
+        totalUpah += it.upah * it.qty;
+        totalLogistic += it.logistic * it.qty;
+        const p = document.createElement("p"); p.className = "summary-item";
+        p.textContent = `${it.name} x${it.qty}: RM${(it.price * it.qty).toFixed(2)}`;
+        d.appendChild(p);
       });
-      const ship=document.querySelector('input[name="ship"]:checked').value;
-      if(ship==="pos"){ packCost=+document.querySelector('input[name="pack"]:checked').value*boxes;
-        d.append(Object.assign(document.createElement("p"),{innerHTML:`<strong>Total Pembungkusan</strong>: RM${packCost.toFixed(2)}`,className:"summary-item"}));
-        d.append(Object.assign(document.createElement("p"),{innerHTML:`<strong>Penghantaran Pos</strong>: RM10 x${boxes} = RM${(10*boxes).toFixed(2)}`,className:"summary-item"}));
-      } else if(ship==="cod"){ const cc=+document.getElementById("codCost").value||0;
-        d.append(Object.assign(document.createElement("p"),{innerHTML:`<strong>Penghantaran COD</strong>: RM${cc.toFixed(2)}`,className:"summary-item"}));
-        boxes = 0; // no logistic cost for COD
-      } else {
-        d.append(Object.assign(document.createElement("p"),{innerHTML:`<strong>Self Pickup</strong>: Guar Utama Guar Chempedak`,className:"summary-item"}));
-        boxes = 0;
+      const ship = document.querySelector('input[name="ship"]:checked').value;
+      if (ship === 'pos') {
+        const boxes = sel.reduce((sum, it) => sum + it.qty, 0);
+        totalPack = boxes * +document.querySelector('input[name="pack"]:checked').value;
+        totalShip = boxes * 10;
+      } else if (ship === 'cod') {
+        totalShip = +document.getElementById('codCost').value;
       }
-      d.append(Object.assign(document.createElement("p"),{innerHTML:`<strong>Total Upah</strong>: RM${totalUpah.toFixed(2)}`,className:"summary-item"}));
-      d.append(Object.assign(document.createElement("p"),{innerHTML:`<strong>Jumlah Keseluruhan</strong>: RM${(totalPrice+totalUpah+packCost+ (boxes*5) + (ship==='pos'?0:0)).toFixed(2)}`,className:"summary-item"}));
-      document.getElementById("orderIdDisplayReview").textContent = 'TEMP-' + Date.now();
+      const grand = totalPrice + totalUpah + totalPack + totalShip + totalLogistic;
+      [
+        { label: 'Total Produk', value: sel.length },
+        { label: 'Total Harga Produk', value: `RM${totalPrice.toFixed(2)}` },
+        { label: 'Total Upah', value: `RM${totalUpah.toFixed(2)}` },
+        { label: 'Total Logistik', value: `RM${totalLogistic.toFixed(2)}` },
+        { label: 'Total Pembungkusan', value: `RM${totalPack.toFixed(2)}` },
+        { label: 'Kos Penghantaran', value: `RM${totalShip.toFixed(2)}` },
+        { label: 'Jumlah Keseluruhan', value: `RM${grand.toFixed(2)}` }
+      ].forEach(item => {
+        const p = document.createElement('p'); p.className = 'summary-item'; p.innerHTML = `<strong>${item.label}:</strong> ${item.value}`; d.appendChild(p);
+      });
+      document.getElementById('orderIdDisplayReview').textContent = generateOrderId();
       d.dataset.totalPrice = totalPrice;
       d.dataset.totalUpah = totalUpah;
-      d.dataset.totalPack = packCost;
-      d.dataset.totalBoxes = boxes;
+      d.dataset.totalPackaging = totalPack;
+      d.dataset.totalShip = totalShip;
+      d.dataset.totalLogistic = totalLogistic;
+      d.dataset.grandTotal = grand;
     }
 
-    document.addEventListener("DOMContentLoaded", ()=>{
+    document.addEventListener("DOMContentLoaded", () => {
       initProducts();
-      document.getElementById("toReview").onclick=()=>{
-        const sel=gatherSelected();
-        if(!sel.length){ document.getElementById("no-stock-message").classList.remove("hidden"); return; }
+      document.getElementById("toReview").onclick = () => {
+        const sel = gatherSelected();
+        if (!sel.length) { document.getElementById("no-stock-message").classList.remove("hidden"); return; }
         document.getElementById("no-stock-message").classList.add("hidden");
-        const name=document.getElementById("customerName").value.trim(), phone=document.getElementById("customerPhone").value.trim();
-        if(!name||!phone){ alert("Sila isi Nama & Telefon."); return; }
-        const addrVal = document.getElementById("customerAddressSelect")?.value.trim() || document.getElementById("customerAddress")?.value.trim() || '';
-        if(!addrVal){ alert("Sila isi/pilih Alamat."); return; }
+        const ship = document.querySelector('input[name="ship"]:checked');
+        const name = document.getElementById("customerName").value.trim();
+        const phone = document.getElementById("customerPhone").value.trim();
+        const addrSelect = document.getElementById("customerAddressSelect");
+        const addrInput = document.getElementById("customerAddress");
+        const addr = addrSelect ? addrSelect.value : addrInput ? addrInput.value.trim() : '';
+        if (!ship.value || !name || !phone || !addr) { alert("Sila lengkapkan semua maklumat."); return; }
         showSummary(sel);
         document.getElementById("section-select").classList.add("hidden");
         document.getElementById("section-review").classList.remove("hidden");
       };
-      document.getElementById("backBtn").onclick=()=>{
+      document.getElementById("backBtn").onclick = () => {
         document.getElementById("section-review").classList.add("hidden");
         document.getElementById("section-select").classList.remove("hidden");
       };
-      document.getElementById("confirmBtn").onclick=()=>{
-n      const btn=document.getElementById("confirmBtn"); btn.disabled=true; btn.textContent="Menghantar...";
-        const sum=document.getElementById("summary");
-        const tp=+sum.dataset.totalPrice, tu=+sum.dataset.totalUpah;
-        const tpk=+sum.dataset.totalPack, tb=+sum.dataset.totalBoxes;
-        const ts=+document.querySelector('input[name="ship"]:checked').value=== 'cod'? +document.getElementById("codCost").value||0 : (document.querySelector('input[name="ship"]:checked').value==='pos'?10*tb:0);
-        const grand = tp + tu + tpk + ts + (tb*5);
-        document.getElementById("field-items").value = gatherSelected().map(i=>`${i.name} x${i.qty}`).join("; ");
-        document.getElementById("field-totalPrice").value = tp;
-        document.getElementById("field-totalUpah").value = tu;
-        document.getElementById("field-totalPackaging").value = tpk;
-        document.getElementById("field-totalShip").value = ts;
-        document.getElementById("field-totalLogistic").value = tb*5;
-        document.getElementById("field-grandTotal").value = grand;
-        document.getElementById("field-customerName").value = document.getElementById("customerName").value;
-        document.getElementById("field-customerAddress").value = document.getElementById("customerAddressSelect")?.value|| document.getElementById("customerAddress").value;
-        document.getElementById("field-customerPhone").value = document.getElementById("customerPhone").value;
+      document.getElementById("confirmBtn").onclick = () => {
+        const btn = document.getElementById("confirmBtn"); btn.disabled = true; btn.textContent = "Menghantar...";
+        const summary = document.getElementById("summary");
+        document.getElementById("field-items").value = gatherSelected().map(it => `${it.name} x${it.qty}`).join("; ");
+        document.getElementById("field-totalPrice").value = summary.dataset.totalPrice;
+        document.getElementById("field-totalUpah").value = summary.dataset.totalUpah;
+        document.getElementById("field-totalPackaging").value = summary.dataset.totalPackaging;
+        document.getElementById("field-totalShip").value = summary.dataset.totalShip;
+        document.getElementById("field-totalLogistic").value = summary.dataset.totalLogistic;
+        document.getElementById("field-grandTotal").value = summary.dataset.grandTotal;
+        document.getElementById("field-customerName").value = document.getElementById("customerName").value.trim();
+        const addrSelect = document.getElementById("customerAddressSelect");
+        const addrInput = document.getElementById("customerAddress");
+        document.getElementById("field-customerAddress").value = addrSelect ? addrSelect.value : addrInput.value;
+        document.getElementById("field-customerPhone").value = document.getElementById("customerPhone").value.trim();
         document.getElementById("field-shippingMethod").value = document.querySelector('input[name="ship"]:checked').value;
-        document.getElementById("field-packaging").value = document.querySelector('input[name="pack"]:checked')?.value || '';
+        const pack = document.querySelector('input[name="pack"]:checked');
+        document.getElementById("field-packaging").value = pack ? pack.value : '';
         document.getElementById("hiddenForm").submit();
-        setTimeout(()=>{ btn.disabled=false; btn.textContent="Sahkan Order"; },5000);
+        setTimeout(() => { btn.disabled = false; btn.textContent = "Sahkan Order"; }, 5000);
       };
     });
   </script></body>
