@@ -1,11 +1,3 @@
-These changes will:
-1. Add automatic image compression
-2. Remove file size limits
-3. Update UI text to reflect no size limits
-4. Convert all uploads to JPEG format for better compression
-5. Maintain all other functionality while improving image handlingHere is the updated HTML content after applying above edits:
-
-```html
 <!DOCTYPE html>
 <html lang="ms">
 <head>
@@ -110,7 +102,7 @@ These changes will:
       <h3>Bukti Pembayaran</h3>
       <div class="file-input-wrapper">
         <label class="file-input-label" for="paymentProof">
-          Pilih Fail Gambar (JPG/PNG)
+          Pilih Fail (JPG/PNG max 2MB)
         </label>
         <input type="file" id="paymentProof" accept="image/*" style="display: none;" onchange="showFileName(this)">
       </div>
@@ -155,7 +147,7 @@ These changes will:
     const scriptURL = 'https://script.google.com/macros/s/AKfycbxlJF6pE3o1IqYVomzrWaaXxuLcjGt80NE-Gkl8lIUzol8QjucqznKfoHrHidrUSvpc3A/exec';
     
     // Validate the script URL is correct
-    if (!scriptURL.startsWith('https://script.google.com')) {
+    if (!scriptURL.startsWith('https://script.google.com/macros/s/AKfycbxlJF6pE3o1IqYVomzrWaaXxuLcjGt80NE-Gkl8lIUzol8QjucqznKfoHrHidrUSvpc3A/exec')) {
       console.error('URL Script tidak sah! Sila semak URL Apps Script');
       alert('Sistem sedang mengalami masalah teknikal. Sila hubungi admin (01170351789)');
     }
@@ -163,10 +155,10 @@ These changes will:
     const products = [
       { name: "Iris Ejen Ali", code: "IEA", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambilan Iris bermula 15/7/2025\nTempahan perlu dibuat 1 minggu awal\nStok terhad!", stock: true },
       { name: "Iris Ejen Alicia", code: "IEI", price: 70, upah: 25, logistic: 5, preorderInfo: "Pengambilan Iris bermula 15/7/2025\nTempahan perlu dibuat 1 minggu awal\nStok terhad!", stock: true },
-      { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 2, logistic: 1.5, stock: false, preorderInfo: "Stok akan kembali pada Q4 2024" },
-      { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 2, logistic: 1.5, stock: false, preorderInfo: "Stok akan kembali pada Q4 2024" },
-      { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 4, logistic: 2, stock: false, preorderInfo: "Stok akan kembali pada Q4 2024" },
-      { name: "Kad Kecemasan Keluangman", code: "IDKM", price: 11.5, upah: 2, logistic: 1.5, stock: false, preorderInfo: "Stok akan kembali pada Q4 2024" }
+      { name: "Kad ID Ejen Ali", code: "IDEA", price: 11.5, upah: 1, logistic: 2.5, stock: false, preorderInfo: "Stok akan kembali pada Q4 2024" },
+      { name: "Kad ID Ejen Alicia", code: "IDEI", price: 11.5, upah: 1, logistic: 2.5, stock: false, preorderInfo: "Stok akan kembali pada Q4 2024" },
+      { name: "Kad ID Ejen Satria", code: "IDES", price: 19, upah: 3.5, logistic: 2.5, stock: false, preorderInfo: "Stok akan kembali pada Q4 2024" },
+      { name: "Kad Kecemasan Keluangman", code: "IDKM", price: 11.5, upah: 1, logistic: 2.5, stock: false, preorderInfo: "Stok akan kembali pada Q4 2024" }
     ];
 
     // Inisialisasi produk dan shipping address
@@ -598,6 +590,8 @@ These changes will:
       const fileNameSpan = document.getElementById('fileName');
       const previewDiv = document.getElementById('filePreview');
       const previewImg = document.getElementById('previewImage');
+      const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+      
       if (input.files && input.files.length > 0) {
         const file = input.files[0];
         if (!file.type.match('image.*')) {
@@ -605,7 +599,11 @@ These changes will:
           input.value = '';
           return;
         }
-        // No size limit - will auto-compress
+        if (file.size > MAX_SIZE) {
+          alert('Saiz fail terlalu besar. Sila pilih fail kurang dari 5MB.');
+          fileInput.value = '';
+          fileNameSpan.textContent = '';
+        } else {
           fileNameSpan.textContent = file.name;
           
           // Show preview for images
@@ -725,49 +723,22 @@ These changes will:
             imageUrl = await new Promise((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = function(e) {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                  const canvas = document.createElement('canvas');
-                  const MAX_WIDTH = 1200;
-                  const MAX_HEIGHT = 1200;
-                  let width = img.width;
-                  let height = img.height;
-                  
-                  if (width > height) {
-                    if (width > MAX_WIDTH) {
-                      height *= MAX_WIDTH / width;
-                      width = MAX_WIDTH;
-                    }
-                  } else {
-                    if (height > MAX_HEIGHT) {
-                      width *= MAX_HEIGHT / height;
-                      height = MAX_HEIGHT;
-                    }
-                  }
-                  
-                  canvas.width = width;
-                  canvas.height = height;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(img, 0, 0, width, height);
-                  
-                  const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
-                  google.script.run
-                    .withSuccessHandler(resolve)
-                    .withFailureHandler(reject)
-                    .uploadToDrive({
-                      name: file.name.replace(/\.[^/.]+$/, '') + '.jpg',
-                      mimeType: 'image/jpeg',
-                      data: compressedBase64 
-                    });
-                };
+                const base64 = e.target.result.split(',')[1];
+                google.script.run
+                  .withSuccessHandler(resolve)
+                  .withFailureHandler(reject)
+                  .uploadToDrive({
+                    name: file.name,
+                    mimeType: file.type,
+                    data: base64 
+                  });
               };
               reader.readAsDataURL(file);
             });
             if (!imageUrl) throw new Error('Gagal upload imej ke Drive');
           } catch (error) {
             console.error('Upload error:', error);
-            alert(`Gagal upload bukti bayaran: ${error.message}\n\nPastikan:\n1. Fail adalah gambar (JPG/PNG)\n2. Sambungan internet stabil`);
+            alert(`Gagal upload bukti bayaran: ${error.message}\n\nPastikan:\n1. Fail adalah gambar (JPG/PNG)\n2. Saiz < 2MB\n3. Sambungan internet stabil`);
             throw error;
           }
           
@@ -812,3 +783,4 @@ These changes will:
   </script>
 </body>
 </html>
+
