@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://script.google.com https://script.googleusercontent.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com">
   <title>ShinZ Personal Shopper Order Form</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 600px; margin: auto; background: #f8f9fa; }
@@ -762,51 +761,23 @@
           // Compress image and get base64 string
           const compressedBase64 = await compressImage(file);
 
-          // Call Apps Script function to upload to Drive with more robust error handling
-          try {
-            imageUrl = await new Promise((resolve, reject) => {
-              google.script.run
-                .withSuccessHandler(resolve)
-                .withFailureHandler(reject)
-                .uploadToDrive({
-                  name: file.name,
-                  mimeType: file.type,
-                  data: compressedBase64 
-                });
-            });
-
-            if (!imageUrl) {
-              throw new Error('Failed to get image URL from Drive upload');
-            }
-          } catch (err) {
-            console.error('Google Script upload error:', err);
-            throw new Error('Gagal upload bukti pembayaran. Sila cuba lagi.');
-          }
+          // Call Apps Script function to upload to Drive
+          imageUrl = await new Promise((resolve, reject) => {
+            google.script.run
+              .withSuccessHandler(resolve)
+              .withFailureHandler(reject)
+              .uploadToDrive({
+                name: file.name,
+                mimeType: file.type,
+                data: compressedBase64 
+              });
+          });
           
           if (!imageUrl) throw new Error('Gagal upload imej ke Drive. URL kosong.');
           document.getElementById('field-paymentProofURL').value = imageUrl;
           
           // Submit form
-          // Create a test submission first to verify form works
-          try {
-            const testResponse = await fetch(scriptURL, {
-              method: 'POST',
-              body: new FormData(document.getElementById("hiddenForm")),
-              mode: 'no-cors'
-            });
-            
-            if (!testResponse.ok) {
-              throw new Error('Failed to submit form data');
-            }
-            
-            // If test succeeds, proceed with actual form submission
-            document.getElementById("hiddenForm").submit();
-            alert('Order berjaya dihantar! Terima kasih.');
-            window.location.reload(); // Reset form after submission
-          } catch (err) {
-            console.error('Form submission error:', err);
-            throw new Error('Gagal menghantar data. Sila hubungi admin untuk bantuan.');
-          }
+          document.getElementById("hiddenForm").submit();
         
         } catch (error) {
           console.error('Error:', error);
